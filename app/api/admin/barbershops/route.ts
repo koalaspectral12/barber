@@ -1,6 +1,20 @@
 import { db } from "@/app/_lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 
+// Helpers para serializar/desserializar phones (MySQL não suporta arrays)
+function parsePhonesField(phones: string): string[] {
+  try {
+    return JSON.parse(phones)
+  } catch {
+    return []
+  }
+}
+
+function serializePhonesField(phones: string[] | string): string {
+  if (Array.isArray(phones)) return JSON.stringify(phones)
+  return phones // já é string JSON
+}
+
 // GET - Listar todas as barbearias
 export async function GET() {
   try {
@@ -13,7 +27,12 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
     })
-    return NextResponse.json(barbershops)
+    // Desserializar phones para array antes de enviar ao frontend
+    const result = barbershops.map((b) => ({
+      ...b,
+      phones: parsePhonesField(b.phones),
+    }))
+    return NextResponse.json(result)
   } catch (error) {
     return NextResponse.json(
       { error: "Erro ao buscar barbearias" },
@@ -39,13 +58,16 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         address,
-        phones: phones || [],
+        phones: serializePhonesField(phones || []),
         description,
         imageUrl,
       },
     })
 
-    return NextResponse.json(barbershop, { status: 201 })
+    return NextResponse.json(
+      { ...barbershop, phones: parsePhonesField(barbershop.phones) },
+      { status: 201 },
+    )
   } catch (error) {
     return NextResponse.json(
       { error: "Erro ao criar barbearia" },

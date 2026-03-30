@@ -30,6 +30,15 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
     return notFound()
   }
 
+  // phones é armazenado como JSON string no MySQL
+  const phones: string[] = (() => {
+    try {
+      return JSON.parse(barbershop.phones)
+    } catch {
+      return []
+    }
+  })()
+
   return (
     <div>
       {/* IMAGEM */}
@@ -98,7 +107,7 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
 
       {/* CONTATO */}
       <div className="space-y-3 p-5">
-        {barbershop.phones.map((phone) => (
+        {phones.map((phone) => (
           <PhoneItem key={phone} phone={phone} />
         ))}
       </div>

@@ -1,6 +1,20 @@
 import { db } from "@/app/_lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 
+// Helpers para serializar/desserializar phones
+function parsePhonesField(phones: string): string[] {
+  try {
+    return JSON.parse(phones)
+  } catch {
+    return []
+  }
+}
+
+function serializePhonesField(phones: string[] | string): string {
+  if (Array.isArray(phones)) return JSON.stringify(phones)
+  return phones
+}
+
 // GET - Buscar barbearia por ID
 export async function GET(
   _request: NextRequest,
@@ -17,7 +31,10 @@ export async function GET(
         { status: 404 },
       )
     }
-    return NextResponse.json(barbershop)
+    return NextResponse.json({
+      ...barbershop,
+      phones: parsePhonesField(barbershop.phones),
+    })
   } catch (error) {
     return NextResponse.json(
       { error: "Erro ao buscar barbearia" },
@@ -40,12 +57,15 @@ export async function PUT(
       data: {
         name,
         address,
-        phones: phones || [],
+        phones: serializePhonesField(phones || []),
         description,
         imageUrl,
       },
     })
-    return NextResponse.json(barbershop)
+    return NextResponse.json({
+      ...barbershop,
+      phones: parsePhonesField(barbershop.phones),
+    })
   } catch (error) {
     return NextResponse.json(
       { error: "Erro ao atualizar barbearia" },
