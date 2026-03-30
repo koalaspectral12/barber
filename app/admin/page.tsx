@@ -63,15 +63,23 @@ const statCards = [
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState("")
 
   useEffect(() => {
     fetch("/api/admin/stats")
       .then((r) => r.json())
       .then((data) => {
-        setStats(data)
+        if (data?.error) {
+          setFetchError(data.error)
+        } else {
+          setStats(data)
+        }
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch(() => {
+        setFetchError("Não foi possível conectar ao banco de dados")
+        setLoading(false)
+      })
   }, [])
 
   return (
@@ -83,6 +91,17 @@ export default function AdminDashboard() {
           Visão geral do sistema FSW Barber
         </p>
       </div>
+
+      {/* DB Error Banner */}
+      {fetchError && (
+        <div className="flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <span className="text-lg">⚠️</span>
+          <div>
+            <p className="font-medium">Banco de dados indisponível</p>
+            <p className="text-xs text-red-400/70">{fetchError}</p>
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

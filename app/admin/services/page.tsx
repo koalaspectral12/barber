@@ -58,16 +58,28 @@ export default function ServicesAdminPage() {
   const [error, setError] = useState("")
   const [successMsg, setSuccessMsg] = useState("")
 
+  const [fetchError, setFetchError] = useState("")
+
   const fetchAll = async () => {
     setLoading(true)
+    setFetchError("")
     try {
       const [sRes, bRes] = await Promise.all([
         fetch("/api/admin/services"),
         fetch("/api/admin/barbershops"),
       ])
       const [sData, bData] = await Promise.all([sRes.json(), bRes.json()])
-      setServices(sData)
-      setBarbershops(bData)
+      if (Array.isArray(sData)) {
+        setServices(sData)
+      } else {
+        setFetchError(sData?.error || "Erro ao carregar serviços")
+        setServices([])
+      }
+      setBarbershops(Array.isArray(bData) ? bData : [])
+    } catch {
+      setFetchError("Não foi possível conectar ao banco de dados")
+      setServices([])
+      setBarbershops([])
     } finally {
       setLoading(false)
     }
@@ -179,6 +191,16 @@ export default function ServicesAdminPage() {
         <div className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400">
           <CheckIcon className="h-4 w-4" />
           {successMsg}
+        </div>
+      )}
+
+      {fetchError && (
+        <div className="flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <span className="text-lg">⚠️</span>
+          <div>
+            <p className="font-medium">Banco de dados indisponível</p>
+            <p className="text-xs text-red-400/70">{fetchError}</p>
+          </div>
         </div>
       )}
 

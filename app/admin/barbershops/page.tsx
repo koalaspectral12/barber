@@ -52,12 +52,23 @@ export default function BarbershopsAdminPage() {
   const [error, setError] = useState("")
   const [successMsg, setSuccessMsg] = useState("")
 
+  const [fetchError, setFetchError] = useState("")
+
   const fetchBarbershops = async () => {
     setLoading(true)
+    setFetchError("")
     try {
       const res = await fetch("/api/admin/barbershops")
       const data = await res.json()
-      setBarbershops(data)
+      if (Array.isArray(data)) {
+        setBarbershops(data)
+      } else {
+        setFetchError(data?.error || "Erro ao carregar barbearias")
+        setBarbershops([])
+      }
+    } catch {
+      setFetchError("Não foi possível conectar ao banco de dados")
+      setBarbershops([])
     } finally {
       setLoading(false)
     }
@@ -170,6 +181,17 @@ export default function BarbershopsAdminPage() {
         <div className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400">
           <CheckIcon className="h-4 w-4" />
           {successMsg}
+        </div>
+      )}
+
+      {/* DB Error Banner */}
+      {fetchError && (
+        <div className="flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <span className="text-lg">⚠️</span>
+          <div>
+            <p className="font-medium">Banco de dados indisponível</p>
+            <p className="text-xs text-red-400/70">{fetchError}</p>
+          </div>
         </div>
       )}
 

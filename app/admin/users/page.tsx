@@ -18,15 +18,25 @@ export default function UsersAdminPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [fetchError, setFetchError] = useState("")
 
   useEffect(() => {
     fetch("/api/admin/users")
       .then((r) => r.json())
       .then((data) => {
-        setUsers(data)
+        if (Array.isArray(data)) {
+          setUsers(data)
+        } else {
+          setFetchError(data?.error || "Erro ao carregar usuários")
+          setUsers([])
+        }
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch(() => {
+        setFetchError("Não foi possível conectar ao banco de dados")
+        setUsers([])
+        setLoading(false)
+      })
   }, [])
 
   const filtered = users.filter(
@@ -44,6 +54,16 @@ export default function UsersAdminPage() {
           Usuários registrados na plataforma
         </p>
       </div>
+
+      {fetchError && (
+        <div className="flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <span className="text-lg">⚠️</span>
+          <div>
+            <p className="font-medium">Banco de dados indisponível</p>
+            <p className="text-xs text-red-400/70">{fetchError}</p>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="flex items-center gap-4 rounded-xl border border-gray-800 bg-gray-900 p-5">

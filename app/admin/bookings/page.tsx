@@ -32,13 +32,23 @@ export default function BookingsAdminPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [successMsg, setSuccessMsg] = useState("")
+  const [fetchError, setFetchError] = useState("")
 
   const fetchBookings = async () => {
     setLoading(true)
+    setFetchError("")
     try {
       const res = await fetch("/api/admin/bookings")
       const data = await res.json()
-      setBookings(data)
+      if (Array.isArray(data)) {
+        setBookings(data)
+      } else {
+        setFetchError(data?.error || "Erro ao carregar agendamentos")
+        setBookings([])
+      }
+    } catch {
+      setFetchError("Não foi possível conectar ao banco de dados")
+      setBookings([])
     } finally {
       setLoading(false)
     }
@@ -99,6 +109,16 @@ export default function BookingsAdminPage() {
         <div className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400">
           <CheckIcon className="h-4 w-4" />
           {successMsg}
+        </div>
+      )}
+
+      {fetchError && (
+        <div className="flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <span className="text-lg">⚠️</span>
+          <div>
+            <p className="font-medium">Banco de dados indisponível</p>
+            <p className="text-xs text-red-400/70">{fetchError}</p>
+          </div>
         </div>
       )}
 
