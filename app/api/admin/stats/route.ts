@@ -1,0 +1,52 @@
+import { db } from "@/app/_lib/prisma"
+import { NextResponse } from "next/server"
+
+// GET - Estatísticas do dashboard
+export async function GET() {
+  try {
+    const [
+      totalBarbershops,
+      totalServices,
+      totalBookings,
+      totalUsers,
+      recentBookings,
+      upcomingBookings,
+    ] = await Promise.all([
+      db.barbershop.count(),
+      db.barbershopService.count(),
+      db.booking.count(),
+      db.user.count(),
+      db.booking.findMany({
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: { select: { name: true, email: true, image: true } },
+          service: {
+            include: {
+              barbershop: { select: { name: true } },
+            },
+          },
+        },
+      }),
+      db.booking.count({
+        where: {
+          date: { gte: new Date() },
+        },
+      }),
+    ])
+
+    return NextResponse.json({
+      totalBarbershops,
+      totalServices,
+      totalBookings,
+      totalUsers,
+      upcomingBookings,
+      recentBookings,
+    })
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Erro ao buscar estatísticas" },
+      { status: 500 },
+    )
+  }
+}
