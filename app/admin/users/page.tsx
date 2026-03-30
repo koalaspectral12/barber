@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { SearchIcon, UsersIcon, CalendarIcon } from "lucide-react"
-import Image from "next/image"
 
 interface User {
   id: string
@@ -141,11 +140,11 @@ export default function UsersAdminPage() {
                     <div className="flex items-center gap-3">
                       <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-gray-800">
                         {u.image ? (
-                          <Image
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
                             src={u.image}
                             alt={u.name ?? ""}
-                            fill
-                            className="object-cover"
+                            className="h-full w-full object-cover"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-sm font-medium text-gray-400">

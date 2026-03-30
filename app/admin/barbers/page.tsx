@@ -11,7 +11,6 @@ import {
   Loader2Icon,
   ScissorsIcon,
 } from "lucide-react"
-import Image from "next/image"
 
 interface Barber {
   id: string
@@ -221,7 +220,9 @@ export default function BarbersAdminPage() {
                   : "border-gray-800 bg-gray-900 hover:border-gray-700"
               }`}
             >
-              <p className="truncate text-xs font-medium text-white">{s.name}</p>
+              <p className="truncate text-xs font-medium text-white">
+                {s.name}
+              </p>
               <p className="mt-1 text-2xl font-bold text-yellow-400">
                 {s.count}
               </p>
@@ -272,7 +273,7 @@ export default function BarbersAdminPage() {
               <th className="hidden px-4 py-3 font-medium lg:table-cell">
                 Cadastro
               </th>
-              <th className="px-4 py-3 font-medium text-right">Ações</th>
+              <th className="px-4 py-3 text-right font-medium">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800">
@@ -304,11 +305,11 @@ export default function BarbersAdminPage() {
                     <div className="flex items-center gap-3">
                       <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-gray-800">
                         {b.user.image || b.avatarUrl ? (
-                          <Image
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
                             src={(b.user.image || b.avatarUrl) as string}
                             alt={b.user.name ?? ""}
-                            fill
-                            className="object-cover"
+                            className="h-full w-full object-cover"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-sm font-bold text-yellow-400">
@@ -329,11 +330,11 @@ export default function BarbersAdminPage() {
                   <td className="hidden px-4 py-3 md:table-cell">
                     <div className="flex items-center gap-2">
                       <div className="relative h-6 w-6 overflow-hidden rounded">
-                        <Image
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
                           src={b.barbershop.imageUrl}
                           alt={b.barbershop.name}
-                          fill
-                          className="object-cover"
+                          className="h-full w-full object-cover"
                         />
                       </div>
                       <span className="text-sm text-gray-300">

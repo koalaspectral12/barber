@@ -11,6 +11,10 @@ const nextConfig = {
       {
         hostname: "avatars.githubusercontent.com",
       },
+      {
+        hostname: "api.dicebear.com",
+        pathname: "/**",
+      },
     ],
   },
 }
