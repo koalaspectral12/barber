@@ -9,13 +9,17 @@ export async function GET() {
       totalServices,
       totalBookings,
       totalUsers,
+      totalBarbers,
+      totalAdmins,
       recentBookings,
       upcomingBookings,
     ] = await Promise.all([
       db.barbershop.count(),
       db.barbershopService.count(),
       db.booking.count(),
-      db.user.count(),
+      db.user.count({ where: { role: "CUSTOMER" } }),
+      db.user.count({ where: { role: "BARBER" } }),
+      db.user.count({ where: { role: "ADMIN" } }),
       db.booking.findMany({
         take: 5,
         orderBy: { createdAt: "desc" },
@@ -29,9 +33,7 @@ export async function GET() {
         },
       }),
       db.booking.count({
-        where: {
-          date: { gte: new Date() },
-        },
+        where: { date: { gte: new Date() } },
       }),
     ])
 
@@ -40,10 +42,12 @@ export async function GET() {
       totalServices,
       totalBookings,
       totalUsers,
+      totalBarbers,
+      totalAdmins,
       upcomingBookings,
       recentBookings,
     })
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Erro ao buscar estatísticas" },
       { status: 500 },

@@ -11,6 +11,7 @@ import {
   MenuIcon,
   XIcon,
   ChevronRightIcon,
+  UserCogIcon,
 } from "lucide-react"
 import { useState } from "react"
 
@@ -24,6 +25,11 @@ const navItems = [
     href: "/admin/barbershops",
     label: "Barbearias",
     icon: ScissorsIcon,
+  },
+  {
+    href: "/admin/barbers",
+    label: "Barbeiros",
+    icon: UserCogIcon,
   },
   {
     href: "/admin/services",

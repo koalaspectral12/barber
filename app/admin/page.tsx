@@ -8,6 +8,8 @@ import {
   UsersIcon,
   TrendingUpIcon,
   ClockIcon,
+  UserCogIcon,
+  ShieldCheckIcon,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -16,6 +18,8 @@ interface Stats {
   totalServices: number
   totalBookings: number
   totalUsers: number
+  totalBarbers: number
+  totalAdmins: number
   upcomingBookings: number
   recentBookings: Array<{
     id: string
@@ -38,9 +42,16 @@ const statCards = [
     bg: "bg-yellow-500/10",
   },
   {
-    key: "totalServices" as keyof Stats,
-    label: "Serviços",
-    icon: SparklesIcon,
+    key: "totalBarbers" as keyof Stats,
+    label: "Barbeiros",
+    icon: UserCogIcon,
+    color: "text-orange-400",
+    bg: "bg-orange-500/10",
+  },
+  {
+    key: "totalAdmins" as keyof Stats,
+    label: "Admins",
+    icon: ShieldCheckIcon,
     color: "text-blue-400",
     bg: "bg-blue-500/10",
   },
@@ -52,8 +63,15 @@ const statCards = [
     bg: "bg-green-500/10",
   },
   {
+    key: "totalServices" as keyof Stats,
+    label: "Serviços",
+    icon: SparklesIcon,
+    color: "text-pink-400",
+    bg: "bg-pink-500/10",
+  },
+  {
     key: "totalUsers" as keyof Stats,
-    label: "Usuários",
+    label: "Clientes",
     icon: UsersIcon,
     color: "text-purple-400",
     bg: "bg-purple-500/10",
@@ -104,7 +122,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
         {statCards.map(({ key, label, icon: Icon, color, bg }) => (
           <div
             key={key}

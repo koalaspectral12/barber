@@ -7,17 +7,34 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Enum de papéis do sistema ────────────────────────────────────────────────
+enum UserRole {
+  CUSTOMER   // cliente comum
+  BARBER     // barbeiro (cadastrado pelo superadmin)
+  ADMIN      // admin de 1 barbearia
+  SUPERADMIN // controla tudo
+}
+
+// ─── Usuário base (NextAuth + roles) ─────────────────────────────────────────
 model User {
   id            String    @id @default(cuid())
   name          String?
   email         String    @unique
   emailVerified DateTime?
   image         String?   @db.Text
+  password      String?   // hash bcrypt para login direto (não OAuth)
+  role          UserRole  @default(CUSTOMER)
+
   accounts      Account[]
   sessions      Session[]
   bookings      Booking[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+
+  // Relações de administração
+  managedShop   BarbershopAdmin? // ADMIN → 1 barbearia
+  barberProfile Barber?          // BARBER → perfil de barbeiro
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Account {
@@ -25,12 +42,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?  @db.Text
-  access_token      String?  @db.Text
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?  @db.Text
+  id_token          String? @db.Text
   session_state     String?
 
   createdAt DateTime @default(now())
@@ -59,36 +76,72 @@ model VerificationToken {
   @@id([identifier, token])
 }
 
+// ─── Barbearia ────────────────────────────────────────────────────────────────
 model Barbershop {
-  id          String              @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
   address     String
-  phones      String              @db.Text
-  description String              @db.Text
-  imageUrl    String              @db.Text
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  services    BarbershopService[]
+  phones      String   @db.Text
+  description String   @db.Text
+  imageUrl    String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services BarbershopService[]
+  admin    BarbershopAdmin?    // 1 admin por barbearia
+  barbers  Barber[]            // N barbeiros por barbearia
 }
 
-model BarbershopService {
-  id           String     @id @default(uuid())
-  name         String
-  description  String     @db.Text
-  imageUrl     String     @db.Text
-  price        Decimal    @db.Decimal(10, 2)
+// ─── Relação Admin ↔ Barbearia (1-para-1) ────────────────────────────────────
+model BarbershopAdmin {
+  id           String @id @default(cuid())
+  userId       String @unique
+  barbershopId String @unique
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  barbershop Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now())
+}
+
+// ─── Barbeiro ─────────────────────────────────────────────────────────────────
+model Barber {
+  id           String  @id @default(cuid())
+  userId       String  @unique
   barbershopId String
-  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
-  bookings     Booking[]
+  bio          String? @db.Text
+  avatarUrl    String? @db.Text
+  specialty    String? // ex: "Corte clássico, Barba"
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  barbershop Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
+// ─── Serviço da Barbearia ─────────────────────────────────────────────────────
+model BarbershopService {
+  id           String  @id @default(uuid())
+  name         String
+  description  String  @db.Text
+  imageUrl     String  @db.Text
+  price        Decimal @db.Decimal(10, 2)
+  barbershopId String
+
+  barbershop Barbershop @relation(fields: [barbershopId], references: [id])
+  bookings   Booking[]
+}
+
+// ─── Agendamento ──────────────────────────────────────────────────────────────
 model Booking {
-  id        String            @id @default(uuid())
+  id        String   @id @default(uuid())
   userId    String
-  user      User              @relation(fields: [userId], references: [id])
   serviceId String
-  service   BarbershopService @relation(fields: [serviceId], references: [id])
   date      DateTime
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User              @relation(fields: [userId], references: [id])
+  service BarbershopService @relation(fields: [serviceId], references: [id])
 }
