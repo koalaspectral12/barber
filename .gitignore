@@ -35,5 +35,14 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Environment files (keep secrets safe)
 .env
+.env.local
 .postgres-data
+
+# Uploaded files (user content, not tracked in git)
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# PM2 logs
+*.log
