@@ -1,12 +1,18 @@
 import { Card, CardContent } from "./ui/card"
+import { db } from "../_lib/prisma"
 
-const Footer = () => {
+const Footer = async () => {
+  const settings = await db.appSettings.findUnique({ where: { id: "singleton" } }).catch(() => null)
+  const appName = settings?.appName || "Barberon"
+  const year = new Date().getFullYear()
+
   return (
     <footer>
       <Card>
         <CardContent className="px-5 py-6">
           <p className="text-sm text-gray-400">
-            © 2023 Copyright <span className="font-bold">FSW Barber</span>
+            © {year} Copyright{" "}
+            <span className="font-bold text-white">{appName}</span>
           </p>
         </CardContent>
       </Card>

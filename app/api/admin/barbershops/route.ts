@@ -1,61 +1,60 @@
 import { db } from "@/app/_lib/prisma"
+import { getAdminContext } from "@/app/_lib/admin-auth"
 import { NextRequest, NextResponse } from "next/server"
+import { randomUUID } from "crypto"
 
-// Helpers para serializar/desserializar phones (MySQL não suporta arrays)
 function parsePhonesField(phones: string): string[] {
-  try {
-    return JSON.parse(phones)
-  } catch {
-    return []
-  }
+  try { return JSON.parse(phones) } catch { return [] }
 }
-
 function serializePhonesField(phones: string[] | string): string {
   if (Array.isArray(phones)) return JSON.stringify(phones)
-  return phones // já é string JSON
+  return phones
 }
 
-// GET - Listar todas as barbearias
 export async function GET() {
   try {
+    const ctx = await getAdminContext()
+    if (!ctx) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+
+    const where = ctx.role === "ADMIN" && ctx.barbershopId
+      ? { id: ctx.barbershopId }
+      : {}
+
     const barbershops = await db.barbershop.findMany({
+      where,
       include: {
         services: true,
-        _count: {
-          select: { services: true },
-        },
+        admin: { include: { user: { select: { id: true, name: true, email: true } } } },
+        _count: { select: { services: true } },
       },
       orderBy: { createdAt: "desc" },
     })
-    // Desserializar phones para array antes de enviar ao frontend
-    const result = barbershops.map((b) => ({
-      ...b,
-      phones: parsePhonesField(b.phones),
-    }))
-    return NextResponse.json(result)
-  } catch (error) {
+
     return NextResponse.json(
-      { error: "Erro ao buscar barbearias" },
-      { status: 500 },
+      barbershops.map((b) => ({ ...b, phones: parsePhonesField(b.phones) }))
     )
+  } catch {
+    return NextResponse.json({ error: "Erro ao buscar barbearias" }, { status: 500 })
   }
 }
 
-// POST - Criar nova barbearia
 export async function POST(request: NextRequest) {
   try {
+    const ctx = await getAdminContext()
+    if (!ctx || ctx.role !== "SUPERADMIN") {
+      return NextResponse.json({ error: "Apenas o Superadmin pode criar barbearias" }, { status: 403 })
+    }
+
     const body = await request.json()
     const { name, address, phones, description, imageUrl } = body
 
     if (!name || !address || !description || !imageUrl) {
-      return NextResponse.json(
-        { error: "Campos obrigatórios faltando" },
-        { status: 400 },
-      )
+      return NextResponse.json({ error: "Campos obrigatórios faltando" }, { status: 400 })
     }
 
     const barbershop = await db.barbershop.create({
       data: {
+        id: randomUUID(),
         name,
         address,
         phones: serializePhonesField(phones || []),
@@ -66,12 +65,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { ...barbershop, phones: parsePhonesField(barbershop.phones) },
-      { status: 201 },
+      { status: 201 }
     )
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Erro ao criar barbearia" },
-      { status: 500 },
-    )
+  } catch {
+    return NextResponse.json({ error: "Erro ao criar barbearia" }, { status: 500 })
   }
 }

@@ -87,9 +87,10 @@ model Barbershop {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  services BarbershopService[]
-  admin    BarbershopAdmin?    // 1 admin por barbearia
-  barbers  Barber[]            // N barbeiros por barbearia
+  services       BarbershopService[]
+  admin          BarbershopAdmin?    // 1 admin por barbearia
+  barbers        Barber[]            // N barbeiros por barbearia
+  paymentConfig  PaymentConfig?      // config de pagamento
 }
 
 // ─── Relação Admin ↔ Barbearia (1-para-1) ────────────────────────────────────
@@ -145,3 +146,28 @@ model Booking {
   user    User              @relation(fields: [userId], references: [id])
   service BarbershopService @relation(fields: [serviceId], references: [id])
 }
+
+// ─── Configurações Globais do App (Superadmin) ────────────────────────────────
+model AppSettings {
+  id        String   @id @default("singleton")
+  appName   String   @default("Barberon")
+  logoUrl   String?  @db.Text
+  banners   String   @db.Text @default("[]") // JSON array de URLs
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Configuração de Pagamento por Barbearia ──────────────────────────────────
+model PaymentConfig {
+  id              String   @id @default(cuid())
+  barbershopId    String   @unique
+  mpAccessToken   String?  @db.Text  // Mercado Pago Access Token
+  mpPublicKey     String?  @db.Text  // Mercado Pago Public Key
+  mpWebhookSecret String?  @db.Text  // Webhook secret
+  active          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  barbershop Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+}
+
+// ─── Adicionar relação PaymentConfig na Barbershop ───────────────────────────

@@ -42,8 +42,8 @@ CREATE TABLE `VerificationToken` (
     PRIMARY KEY (`identifier`, `token`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- CreateIndex
-CREATE UNIQUE INDEX `User_email_key` ON `User`(`email`);
+-- CreateIndex (skip if already exists from init_db)
+-- CREATE UNIQUE INDEX `User_email_key` ON `User`(`email`);
 
 -- AddForeignKey
 ALTER TABLE `Account` ADD CONSTRAINT `Account_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

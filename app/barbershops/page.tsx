@@ -11,32 +11,25 @@ interface BarbershopsPageProps {
 }
 
 const BarbershopsPage = async ({ searchParams }: BarbershopsPageProps) => {
+  // MySQL não suporta mode: "insensitive", mas LIKE padrão já é case-insensitive
   const barbershops = await db.barbershop.findMany({
     where: {
       OR: [
         searchParams?.title
-          ? {
-              name: {
-                contains: searchParams?.title,
-                mode: "insensitive",
-              },
-            }
+          ? { name: { contains: searchParams.title } }
           : {},
-        searchParams.service
+        searchParams?.service
           ? {
               services: {
-                some: {
-                  name: {
-                    contains: searchParams.service,
-                    mode: "insensitive",
-                  },
-                },
+                some: { name: { contains: searchParams.service } },
               },
             }
           : {},
       ],
     },
   })
+
+  const term = searchParams?.title || searchParams?.service || ""
 
   return (
     <div>
@@ -46,14 +39,19 @@ const BarbershopsPage = async ({ searchParams }: BarbershopsPageProps) => {
       </div>
       <div className="px-5">
         <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
-          Resultados para &quot;{searchParams?.title || searchParams?.service}
-          &quot;
+          {term ? `Resultados para "${term}"` : "Todas as barbearias"}
         </h2>
-        <div className="grid grid-cols-2 gap-4">
-          {barbershops.map((barbershop) => (
-            <BarbershopItem key={barbershop.id} barbershop={barbershop} />
-          ))}
-        </div>
+        {barbershops.length === 0 ? (
+          <p className="py-8 text-center text-sm text-gray-500">
+            Nenhuma barbearia encontrada para &quot;{term}&quot;
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            {barbershops.map((barbershop) => (
+              <BarbershopItem key={barbershop.id} barbershop={barbershop} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
