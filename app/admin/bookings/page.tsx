@@ -9,8 +9,6 @@ import {
   Loader2Icon,
   ClockIcon,
 } from "lucide-react"
-import Image from "next/image"
-
 interface Booking {
   id: string
   date: string
@@ -244,11 +242,11 @@ export default function BookingsAdminPage() {
                       <div className="flex items-center gap-2">
                         <div className="relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-gray-800">
                           {b.user.image ? (
-                            <Image
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
                               src={b.user.image}
                               alt={b.user.name ?? ""}
-                              fill
-                              className="object-cover"
+                              className="h-full w-full object-cover"
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">

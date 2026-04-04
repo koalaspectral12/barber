@@ -1,6 +1,7 @@
 import { db } from "@/app/_lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
+import { randomUUID } from "crypto"
 
 // PUT - atualizar admin
 export async function PUT(
@@ -22,7 +23,9 @@ export async function PUT(
 
     // Atualizar barbearia associada
     if (barbershopId && user.role === "ADMIN") {
-      const existing = await db.barbershopAdmin.findUnique({ where: { userId: params.id } })
+      const existing = await db.barbershopAdmin.findUnique({
+        where: { userId: params.id },
+      })
       if (existing) {
         await db.barbershopAdmin.update({
           where: { userId: params.id },
@@ -30,11 +33,13 @@ export async function PUT(
         })
       } else {
         // Verificar se a barbearia já tem admin
-        const shopAdmin = await db.barbershopAdmin.findUnique({ where: { barbershopId } })
+        const shopAdmin = await db.barbershopAdmin.findUnique({
+          where: { barbershopId },
+        })
         if (!shopAdmin) {
           await db.barbershopAdmin.create({
             data: {
-              id: require("crypto").randomUUID(),
+              id: randomUUID(),
               userId: params.id,
               barbershopId,
             },
@@ -49,7 +54,10 @@ export async function PUT(
     return NextResponse.json({ ...user, password: undefined })
   } catch (e) {
     console.error(e)
-    return NextResponse.json({ error: "Erro ao atualizar admin" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Erro ao atualizar admin" },
+      { status: 500 },
+    )
   }
 }
 
@@ -60,14 +68,25 @@ export async function DELETE(
 ) {
   try {
     const user = await db.user.findUnique({ where: { id: params.id } })
-    if (!user) return NextResponse.json({ error: "Admin não encontrado" }, { status: 404 })
-    if (user.role === "SUPERADMIN") return NextResponse.json({ error: "Não é possível remover o Superadmin" }, { status: 403 })
+    if (!user)
+      return NextResponse.json(
+        { error: "Admin não encontrado" },
+        { status: 404 },
+      )
+    if (user.role === "SUPERADMIN")
+      return NextResponse.json(
+        { error: "Não é possível remover o Superadmin" },
+        { status: 403 },
+      )
 
     await db.barbershopAdmin.deleteMany({ where: { userId: params.id } })
     await db.user.delete({ where: { id: params.id } })
 
     return NextResponse.json({ message: "Admin removido com sucesso" })
   } catch {
-    return NextResponse.json({ error: "Erro ao remover admin" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Erro ao remover admin" },
+      { status: 500 },
+    )
   }
 }
