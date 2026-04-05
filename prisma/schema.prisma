@@ -91,6 +91,7 @@ model Barbershop {
   admin          BarbershopAdmin?    // 1 admin por barbearia
   barbers        Barber[]            // N barbeiros por barbearia
   paymentConfig  PaymentConfig?      // config de pagamento
+  hours          BarbershopHours[]   // horários de funcionamento
 }
 
 // ─── Relação Admin ↔ Barbearia (1-para-1) ────────────────────────────────────
@@ -170,4 +171,17 @@ model PaymentConfig {
   barbershop Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
 }
 
-// ─── Adicionar relação PaymentConfig na Barbershop ───────────────────────────
+// ─── Horários de Funcionamento da Barbearia ──────────────────────────────────
+// dayOfWeek: 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sáb
+model BarbershopHours {
+  id           String @id @default(cuid())
+  barbershopId String
+  dayOfWeek    Int    // 0-6
+  openTime     String // "HH:MM" ex: "09:00"
+  closeTime    String // "HH:MM" ex: "18:00"
+  slotMinutes  Int    @default(30) // duração do slot em minutos
+
+  barbershop Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
+
+  @@unique([barbershopId, dayOfWeek])
+}

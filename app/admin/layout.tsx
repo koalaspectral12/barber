@@ -16,6 +16,7 @@ import {
   SettingsIcon,
   CreditCardIcon,
   LogOutIcon,
+  ClockIcon,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { signOut, useSession } from "next-auth/react"
@@ -29,10 +30,14 @@ interface AdminMe {
   barbershop: { id: string; name: string; imageUrl: string } | null
 }
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const pathname = usePathname()
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [me, setMe] = useState<AdminMe | null>(null)
 
@@ -58,15 +63,61 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isSuperAdmin = me?.role === "SUPERADMIN"
 
   const navItems = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboardIcon, always: true },
-    { href: "/admin/barbershops", label: "Barbearias", icon: ScissorsIcon, always: true },
-    { href: "/admin/services", label: "Serviços", icon: SparklesIcon, always: true },
-    { href: "/admin/bookings", label: "Agendamentos", icon: CalendarIcon, always: true },
-    { href: "/admin/payment", label: "Pagamento", icon: CreditCardIcon, always: true },
-    { href: "/admin/barbers", label: "Barbeiros", icon: UserCogIcon, superOnly: true },
-    { href: "/admin/admins", label: "Admins", icon: ShieldCheckIcon, superOnly: true },
-    { href: "/admin/users", label: "Clientes", icon: UsersIcon, superOnly: true },
-    { href: "/admin/settings", label: "Configurações", icon: SettingsIcon, superOnly: true },
+    {
+      href: "/admin",
+      label: "Dashboard",
+      icon: LayoutDashboardIcon,
+      always: true,
+    },
+    {
+      href: "/admin/barbershops",
+      label: "Barbearias",
+      icon: ScissorsIcon,
+      always: true,
+    },
+    {
+      href: "/admin/services",
+      label: "Serviços",
+      icon: SparklesIcon,
+      always: true,
+    },
+    {
+      href: "/admin/bookings",
+      label: "Agendamentos",
+      icon: CalendarIcon,
+      always: true,
+    },
+    {
+      href: "/admin/payment",
+      label: "Pagamento",
+      icon: CreditCardIcon,
+      always: true,
+    },
+    { href: "/admin/hours", label: "Horários", icon: ClockIcon, always: true },
+    {
+      href: "/admin/barbers",
+      label: "Barbeiros",
+      icon: UserCogIcon,
+      superOnly: true,
+    },
+    {
+      href: "/admin/admins",
+      label: "Admins",
+      icon: ShieldCheckIcon,
+      superOnly: true,
+    },
+    {
+      href: "/admin/users",
+      label: "Clientes",
+      icon: UsersIcon,
+      superOnly: true,
+    },
+    {
+      href: "/admin/settings",
+      label: "Configurações",
+      icon: SettingsIcon,
+      superOnly: true,
+    },
   ].filter((item) => item.always || (item.superOnly && isSuperAdmin))
 
   if (status === "loading" || !me) {
@@ -99,7 +150,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       >
         <Icon className="h-4 w-4 flex-shrink-0" />
         {item.label}
-        {isActive && <ChevronRightIcon className="ml-auto h-3 w-3 text-yellow-400" />}
+        {isActive && (
+          <ChevronRightIcon className="ml-auto h-3 w-3 text-yellow-400" />
+        )}
       </Link>
     )
   }
@@ -120,9 +173,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Info do admin */}
       <div className="border-b border-gray-800 px-4 py-3">
-        <p className="truncate text-xs font-medium text-white">{me?.name || me?.email}</p>
+        <p className="truncate text-xs font-medium text-white">
+          {me?.name || me?.email}
+        </p>
         {me?.barbershop && (
-          <p className="truncate text-xs text-yellow-400">{me.barbershop.name}</p>
+          <p className="truncate text-xs text-yellow-400">
+            {me.barbershop.name}
+          </p>
         )}
         {isSuperAdmin && (
           <span className="mt-1 inline-block rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-400">
@@ -137,8 +194,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ))}
       </nav>
 
-      <div className="border-t border-gray-800 p-4 space-y-2">
-        <Link href="/" className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-300">
+      <div className="space-y-2 border-t border-gray-800 p-4">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-300"
+        >
           ← Voltar ao site
         </Link>
         <button
@@ -162,7 +222,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar Mobile */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setSidebarOpen(false)}
+          />
           <aside className="absolute left-0 top-0 flex h-full w-64 flex-col border-r border-gray-800 bg-gray-900">
             <div className="flex h-16 items-center justify-between border-b border-gray-800 px-6">
               <div className="flex items-center gap-3">
@@ -171,7 +234,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </div>
                 <p className="text-sm font-bold">Barberon</p>
               </div>
-              <button onClick={() => setSidebarOpen(false)} className="text-gray-400 hover:text-white">
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="text-gray-400 hover:text-white"
+              >
                 <XIcon className="h-5 w-5" />
               </button>
             </div>
@@ -183,7 +249,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main Content */}
       <div className="flex flex-1 flex-col">
         <header className="flex h-16 items-center gap-4 border-b border-gray-800 bg-gray-900 px-4 md:hidden">
-          <button onClick={() => setSidebarOpen(true)} className="text-gray-400 hover:text-white">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="text-gray-400 hover:text-white"
+          >
             <MenuIcon className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2">

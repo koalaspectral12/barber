@@ -27,7 +27,6 @@ export const authOptions: NextAuthOptions = {
 
         if (!user || !user.password) return null
 
-        // Comparar senha com bcrypt-like (usando hash simples para dev)
         const bcrypt = await import("bcryptjs")
         const valid = await bcrypt.compare(credentials.password, user.password)
         if (!valid) return null
@@ -44,14 +43,41 @@ export const authOptions: NextAuthOptions = {
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account }) {
+      // For Google logins, ensure user has a role in DB
+      if (account?.provider === "google" && user.email) {
+        const dbUser = await db.user.findUnique({
+          where: { email: user.email },
+        })
+        if (dbUser && !dbUser.role) {
+          await db.user.update({
+            where: { email: user.email },
+            data: { role: "CUSTOMER" },
+          })
+        }
+      }
+      return true
+    },
+    async jwt({ token, user, account }) {
       if (user) {
         token.role = (user as { role?: string }).role
         token.id = user.id
       }
-      // Refresh role from DB on each request
-      if (token.email && !token.role) {
-        const dbUser = await db.user.findUnique({ where: { email: token.email as string } })
+      // For Google OAuth, load role from DB since it's not in the OAuth user object
+      if (account?.provider === "google" && token.email) {
+        const dbUser = await db.user.findUnique({
+          where: { email: token.email as string },
+        })
+        if (dbUser) {
+          token.role = dbUser.role
+          token.id = dbUser.id
+        }
+      }
+      // Always ensure role is loaded
+      if (!token.role && token.email) {
+        const dbUser = await db.user.findUnique({
+          where: { email: token.email as string },
+        })
         if (dbUser) {
           token.role = dbUser.role
           token.id = dbUser.id
@@ -61,10 +87,28 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as { role?: string; id?: string }).role = token.role as string
-        ;(session.user as { role?: string; id?: string }).id = token.id as string
+        ;(session.user as { role?: string; id?: string }).role =
+          token.role as string
+        ;(session.user as { role?: string; id?: string }).id =
+          token.id as string
       }
       return session
+    },
+    // Prevent Google login from redirecting to /admin
+    async redirect({ url, baseUrl }) {
+      // If the URL is the admin area and no explicit callbackUrl, go to home
+      if (url.startsWith(baseUrl + "/admin")) {
+        return baseUrl
+      }
+      // Allow relative URLs
+      if (url.startsWith("/")) {
+        // Don't auto-redirect non-admins to admin
+        if (url.startsWith("/admin")) return baseUrl
+        return `${baseUrl}${url}`
+      }
+      // Allow same-origin URLs
+      if (url.startsWith(baseUrl)) return url
+      return baseUrl
     },
   },
   pages: {

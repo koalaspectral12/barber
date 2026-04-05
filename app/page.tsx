@@ -7,6 +7,7 @@ import BarbershopItem from "./_components/barbershop-item"
 import { quickSearchOptions } from "./_constants/search"
 import Search from "./_components/search"
 import BannerCarousel from "./_components/banner-carousel"
+import UpcomingBookings from "./_components/upcoming-bookings"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -75,6 +76,8 @@ const Home = async () => {
         </div>
 
         <BannerCarousel banners={banners} appName={appName} />
+
+        <UpcomingBookings />
 
         <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
           Recomendados
