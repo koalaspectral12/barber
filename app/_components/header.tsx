@@ -7,9 +7,18 @@ import Link from "next/link"
 import { db } from "../_lib/prisma"
 
 const Header = async () => {
-  const settings = await db.appSettings.findUnique({ where: { id: "singleton" } }).catch(() => null)
-  const appName = settings?.appName || "Barberon"
-  const logoUrl = settings?.logoUrl || null
+  let appName = "Barberon"
+  let logoUrl: string | null = null
+
+  try {
+    const settings = await db.appSettings.findUnique({
+      where: { id: "singleton" },
+    })
+    appName = settings?.appName || "Barberon"
+    logoUrl = settings?.logoUrl || null
+  } catch {
+    // DB not available — use defaults
+  }
 
   return (
     <Card>

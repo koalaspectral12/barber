@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import BarbershopItem from "../_components/barbershop-item"
 import Header from "../_components/header"
 import Search from "../_components/search"
@@ -11,23 +13,26 @@ interface BarbershopsPageProps {
 }
 
 const BarbershopsPage = async ({ searchParams }: BarbershopsPageProps) => {
-  // MySQL não suporta mode: "insensitive", mas LIKE padrão já é case-insensitive
-  const barbershops = await db.barbershop.findMany({
-    where: {
-      OR: [
-        searchParams?.title
-          ? { name: { contains: searchParams.title } }
-          : {},
-        searchParams?.service
-          ? {
-              services: {
-                some: { name: { contains: searchParams.service } },
-              },
-            }
-          : {},
-      ],
-    },
-  })
+  let barbershops: Awaited<ReturnType<typeof db.barbershop.findMany>> = []
+
+  try {
+    barbershops = await db.barbershop.findMany({
+      where: {
+        OR: [
+          searchParams?.title ? { name: { contains: searchParams.title } } : {},
+          searchParams?.service
+            ? {
+                services: {
+                  some: { name: { contains: searchParams.service } },
+                },
+              }
+            : {},
+        ],
+      },
+    })
+  } catch {
+    // DB not available — render empty state
+  }
 
   const term = searchParams?.title || searchParams?.service || ""
 
@@ -43,7 +48,9 @@ const BarbershopsPage = async ({ searchParams }: BarbershopsPageProps) => {
         </h2>
         {barbershops.length === 0 ? (
           <p className="py-8 text-center text-sm text-gray-500">
-            Nenhuma barbearia encontrada para &quot;{term}&quot;
+            {term
+              ? `Nenhuma barbearia encontrada para "${term}"`
+              : "Nenhuma barbearia cadastrada ainda."}
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-4">

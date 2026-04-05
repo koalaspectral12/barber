@@ -2,8 +2,17 @@ import { Card, CardContent } from "./ui/card"
 import { db } from "../_lib/prisma"
 
 const Footer = async () => {
-  const settings = await db.appSettings.findUnique({ where: { id: "singleton" } }).catch(() => null)
-  const appName = settings?.appName || "Barberon"
+  let appName = "Barberon"
+
+  try {
+    const settings = await db.appSettings.findUnique({
+      where: { id: "singleton" },
+    })
+    appName = settings?.appName || "Barberon"
+  } catch {
+    // DB not available — use defaults
+  }
+
   const year = new Date().getFullYear()
 
   return (

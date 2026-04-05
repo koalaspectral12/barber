@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import PhoneItem from "@/app/_components/phone-item"
 import ServiceItem from "@/app/_components/service-item"
 import SidebarSheet from "@/app/_components/sidebar-sheet"
@@ -5,7 +7,6 @@ import { Button } from "@/app/_components/ui/button"
 import { Sheet, SheetTrigger } from "@/app/_components/ui/sheet"
 import { db } from "@/app/_lib/prisma"
 import { ChevronLeftIcon, MapPinIcon, MenuIcon, StarIcon } from "lucide-react"
-import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
@@ -16,21 +17,15 @@ interface BarbershopPageProps {
 }
 
 const BarbershopPage = async ({ params }: BarbershopPageProps) => {
-  // chamar o meu banco de dados
   const barbershop = await db.barbershop.findUnique({
-    where: {
-      id: params.id,
-    },
-    include: {
-      services: true,
-    },
+    where: { id: params.id },
+    include: { services: true },
   })
 
   if (!barbershop) {
     return notFound()
   }
 
-  // phones é armazenado como JSON string no MySQL
   const phones: string[] = (() => {
     try {
       return JSON.parse(barbershop.phones)
@@ -43,11 +38,11 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
     <div>
       {/* IMAGEM */}
       <div className="relative h-[250px] w-full">
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           alt={barbershop.name}
-          src={barbershop?.imageUrl}
-          fill
-          className="object-cover"
+          src={barbershop.imageUrl}
+          className="h-full w-full object-cover"
         />
 
         <Button
@@ -80,9 +75,8 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
         <h1 className="mb-3 text-xl font-bold">{barbershop.name}</h1>
         <div className="mb-2 flex items-center gap-2">
           <MapPinIcon className="text-primary" size={18} />
-          <p className="text-sm">{barbershop?.address}</p>
+          <p className="text-sm">{barbershop.address}</p>
         </div>
-
         <div className="flex items-center gap-2">
           <StarIcon className="fill-primary text-primary" size={18} />
           <p className="text-sm">5,0 (499 avaliações)</p>
@@ -92,7 +86,7 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
       {/* DESCRIÇÃO */}
       <div className="space-y-2 border-b border-solid p-5">
         <h2 className="text-xs font-bold uppercase text-gray-400">Sobre nós</h2>
-        <p className="text-justify text-sm">{barbershop?.description}</p>
+        <p className="text-justify text-sm">{barbershop.description}</p>
       </div>
 
       {/* SERVIÇOS */}
