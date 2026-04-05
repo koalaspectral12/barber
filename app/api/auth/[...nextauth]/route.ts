@@ -67,19 +67,42 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === "google" && token.email) {
         const dbUser = await db.user.findUnique({
           where: { email: token.email as string },
+          include: { managedShop: true },
         })
         if (dbUser) {
-          token.role = dbUser.role
+          // Auto-deactivate expired admin
+          if (
+            dbUser.role === "ADMIN" &&
+            dbUser.managedShop?.expiresAt &&
+            new Date(dbUser.managedShop.expiresAt) < new Date()
+          ) {
+            await db.barbershopAdmin.update({
+              where: { userId: dbUser.id },
+              data: { active: false },
+            })
+            await db.barbershop.update({
+              where: { id: dbUser.managedShop.barbershopId },
+              data: { active: false },
+            })
+            token.role = "CUSTOMER"
+          } else {
+            token.role = dbUser.role
+          }
           token.id = dbUser.id
         }
       }
-      // Always ensure role is loaded
+      // Always ensure role is loaded and expiry checked
       if (!token.role && token.email) {
         const dbUser = await db.user.findUnique({
           where: { email: token.email as string },
+          include: { managedShop: true },
         })
         if (dbUser) {
-          token.role = dbUser.role
+          if (dbUser.role === "ADMIN" && dbUser.managedShop?.active === false) {
+            token.role = "CUSTOMER"
+          } else {
+            token.role = dbUser.role
+          }
           token.id = dbUser.id
         }
       }

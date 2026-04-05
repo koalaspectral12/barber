@@ -19,8 +19,12 @@ const Home = async () => {
 
   try {
     const [shops, popular, settings] = await Promise.all([
-      db.barbershop.findMany({ take: 10 }),
-      db.barbershop.findMany({ orderBy: { name: "asc" }, take: 10 }),
+      db.barbershop.findMany({ where: { active: true }, take: 10 }),
+      db.barbershop.findMany({
+        where: { active: true },
+        orderBy: { name: "asc" },
+        take: 10,
+      }),
       db.appSettings.findUnique({ where: { id: "singleton" } }),
     ])
     barbershops = shops

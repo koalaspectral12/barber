@@ -14,11 +14,10 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 
-// Inner form — uses useSearchParams, must be inside <Suspense>
 function SignInForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/admin"
+  const callbackUrl = searchParams.get("callbackUrl") || "/"
 
   const [tab, setTab] = useState<"signin" | "register">("signin")
   const [email, setEmail] = useState("")
@@ -72,7 +71,7 @@ function SignInForm() {
           redirect: false,
         })
         if (result?.error) {
-          setError("Conta criada, mas erro ao fazer login. Tente novamente.")
+          setError("Conta criada, mas erro ao fazer login. Tente entrar.")
           setSuccessMsg("")
           setTab("signin")
         } else {
@@ -88,7 +87,7 @@ function SignInForm() {
 
   return (
     <div className="rounded-2xl border border-gray-800 bg-gray-900 p-8">
-      {/* Tab selector */}
+      {/* Tabs */}
       <div className="mb-6 flex gap-2 rounded-lg border border-gray-800 p-1">
         <button
           onClick={() => {
@@ -133,7 +132,7 @@ function SignInForm() {
 
       {tab === "signin" ? (
         <>
-          {/* Google login */}
+          {/* Google */}
           <button
             onClick={() => signIn("google", { callbackUrl: "/" })}
             className="mb-4 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800 py-2.5 text-sm font-medium text-white transition hover:bg-gray-700"
@@ -201,6 +200,7 @@ function SignInForm() {
           </form>
         </>
       ) : (
+        /* Register */
         <form onSubmit={handleRegister} className="space-y-4">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-300">
@@ -268,21 +268,18 @@ function SignInForm() {
             ) : (
               <UserPlusIcon className="h-4 w-4" />
             )}
-            {loading ? "Criando conta..." : "Criar conta"}
+            {loading ? "Criando conta..." : "Criar conta grátis"}
           </button>
-
           <p className="text-center text-xs text-gray-500">
-            Ao criar conta, você concorda com os termos de uso.
+            Ao criar conta você concorda com os termos de uso.
           </p>
         </form>
       )}
 
       <div className="mt-6 border-t border-gray-800 pt-4 text-center">
-        <p className="text-xs text-gray-500">
-          <a href="/" className="text-yellow-400 hover:underline">
-            ← Voltar ao site
-          </a>
-        </p>
+        <a href="/" className="text-xs text-yellow-400 hover:underline">
+          ← Voltar ao site
+        </a>
       </div>
     </div>
   )
@@ -292,8 +289,6 @@ function SignInSkeleton() {
   return (
     <div className="rounded-2xl border border-gray-800 bg-gray-900 p-8">
       <div className="space-y-4">
-        <div className="h-6 w-24 animate-pulse rounded bg-gray-800" />
-        <div className="h-4 w-48 animate-pulse rounded bg-gray-800" />
         <div className="h-10 w-full animate-pulse rounded-lg bg-gray-800" />
         <div className="h-10 w-full animate-pulse rounded-lg bg-gray-800" />
         <div className="h-10 w-full animate-pulse rounded-lg bg-gray-800" />
@@ -306,7 +301,6 @@ export default function SignInPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-950 px-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-yellow-500">
             <ScissorsIcon className="h-8 w-8 text-black" />
@@ -316,7 +310,6 @@ export default function SignInPage() {
             <p className="text-sm text-gray-400">Entre ou crie sua conta</p>
           </div>
         </div>
-
         <Suspense fallback={<SignInSkeleton />}>
           <SignInForm />
         </Suspense>

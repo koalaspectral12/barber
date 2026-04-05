@@ -19,10 +19,10 @@ interface BarbershopPageProps {
 const BarbershopPage = async ({ params }: BarbershopPageProps) => {
   const barbershop = await db.barbershop.findUnique({
     where: { id: params.id },
-    include: { services: true },
+    include: { services: true, paymentConfig: true },
   })
 
-  if (!barbershop) {
+  if (!barbershop || !barbershop.active) {
     return notFound()
   }
 
@@ -98,6 +98,13 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
               key={service.id}
               service={service}
               barbershopName={barbershop.name}
+              hasMercadoPago={
+                !!(
+                  barbershop.paymentConfig?.active &&
+                  barbershop.paymentConfig?.mpPublicKey
+                )
+              }
+              mpPublicKey={barbershop.paymentConfig?.mpPublicKey ?? undefined}
             />
           ))}
         </div>

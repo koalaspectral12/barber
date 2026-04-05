@@ -17,6 +17,9 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   Loader2Icon,
+  BanknoteIcon,
+  CreditCardIcon,
+  CheckCircle2Icon,
 } from "lucide-react"
 import {
   Dialog,
@@ -30,6 +33,8 @@ import Image from "next/image"
 interface ServiceItemProps {
   service: BarbershopService
   barbershopName?: string
+  hasMercadoPago?: boolean
+  mpPublicKey?: string
 }
 
 const DAYS_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
@@ -60,7 +65,11 @@ interface TimeSlot {
   available: boolean
 }
 
-const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
+const ServiceItem = ({
+  service,
+  barbershopName,
+  hasMercadoPago = false,
+}: ServiceItemProps) => {
   const { data: session } = useSession()
   const [open, setOpen] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
@@ -70,6 +79,9 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
   const [currentYear, setCurrentYear] = useState(today.getFullYear())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
+  const [selectedPayment, setSelectedPayment] = useState<
+    "local" | "mercadopago"
+  >("local")
   const [slots, setSlots] = useState<TimeSlot[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [closed, setClosed] = useState(false)
@@ -84,9 +96,7 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
     if (currentMonth === 0) {
       setCurrentMonth(11)
       setCurrentYear((y) => y - 1)
-    } else {
-      setCurrentMonth((m) => m - 1)
-    }
+    } else setCurrentMonth((m) => m - 1)
     setSelectedDate(null)
     setSelectedTime(null)
     setSlots([])
@@ -96,9 +106,7 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
     if (currentMonth === 11) {
       setCurrentMonth(0)
       setCurrentYear((y) => y + 1)
-    } else {
-      setCurrentMonth((m) => m + 1)
-    }
+    } else setCurrentMonth((m) => m + 1)
     setSelectedDate(null)
     setSelectedTime(null)
     setSlots([])
@@ -133,11 +141,8 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
         },
       )
       const data = await res.json()
-      if (data.closed) {
-        setClosed(true)
-      } else {
-        setSlots(data.slots || [])
-      }
+      if (data.closed) setClosed(true)
+      else setSlots(data.slots || [])
     } catch {
       setSlots([])
     } finally {
@@ -160,11 +165,17 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
         body: JSON.stringify({
           serviceId: service.id,
           date: bookingDate.toISOString(),
+          paymentMethod: selectedPayment,
         }),
       })
+
       if (res.ok) {
+        const data = await res.json()
+        // If Mercado Pago and we get a payment URL, redirect
+        if (selectedPayment === "mercadopago" && data.paymentUrl) {
+          window.open(data.paymentUrl, "_blank")
+        }
         setSuccess(true)
-        // Reload slots to show the booked slot as unavailable
         loadSlots(selectedDate)
       } else {
         const data = await res.json()
@@ -189,10 +200,10 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
       setSelectedDate(null)
       setSelectedTime(null)
       setSlots([])
+      setSelectedPayment("local")
     }
   }
 
-  // Reset success after 3 seconds and close
   useEffect(() => {
     if (success) {
       const t = setTimeout(() => {
@@ -203,9 +214,14 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
     }
   }, [success])
 
+  const priceFormatted = Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(Number(service.price))
+
   return (
     <>
-      {/* Login dialog when user is not authenticated */}
+      {/* Login dialog */}
       <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
         <DialogContent className="w-[90%]">
           <DialogHeader>
@@ -222,12 +238,22 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
             <Image alt="Google" src="/google.svg" width={18} height={18} />
             Entrar com Google
           </Button>
+          <Button
+            variant="secondary"
+            className="gap-2"
+            onClick={() => {
+              setLoginOpen(false)
+              window.location.href = "/auth/signin"
+            }}
+          >
+            Entrar com email e senha
+          </Button>
         </DialogContent>
       </Dialog>
 
+      {/* Service Card */}
       <Card>
         <CardContent className="flex items-center gap-3 p-3">
-          {/* IMAGE */}
           <div className="max-h-[110px] min-h-[110px] min-w-[110px] max-w-[110px] overflow-hidden rounded-lg">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -236,18 +262,11 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
               className="h-full w-full object-cover"
             />
           </div>
-
-          {/* INFO */}
           <div className="w-full space-y-2">
             <h3 className="text-sm font-semibold">{service.name}</h3>
             <p className="text-sm text-gray-400">{service.description}</p>
             <div className="flex items-center justify-between">
-              <p className="text-sm font-bold text-primary">
-                {Intl.NumberFormat("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                }).format(Number(service.price))}
-              </p>
+              <p className="text-sm font-bold text-primary">{priceFormatted}</p>
               <Button
                 variant="secondary"
                 size="sm"
@@ -283,24 +302,18 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
                 {barbershopName && (
                   <p className="text-sm text-gray-400">{barbershopName}</p>
                 )}
-                <p className="font-bold text-primary">
-                  {Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                  }).format(Number(service.price))}
-                </p>
+                <p className="font-bold text-primary">{priceFormatted}</p>
               </div>
             </div>
           </div>
 
-          {/* Success message */}
+          {/* Feedback */}
           {success && (
-            <div className="mx-5 mt-4 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400">
-              ✅ Agendamento confirmado! Até logo.
+            <div className="mx-5 mt-4 flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-400">
+              <CheckCircle2Icon size={16} />
+              Agendamento confirmado! Até logo.
             </div>
           )}
-
-          {/* Error message */}
           {error && (
             <div className="mx-5 mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
               {error}
@@ -341,11 +354,10 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
                   ))}
                 </div>
 
-                {/* Days grid */}
+                {/* Days */}
                 <div className="grid grid-cols-7 gap-y-1 text-center">
-                  {/* Empty cells for first day */}
                   {Array.from({ length: firstDay }).map((_, i) => (
-                    <div key={`empty-${i}`} />
+                    <div key={`e-${i}`} />
                   ))}
                   {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(
                     (day) => {
@@ -368,7 +380,7 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
                 </div>
               </div>
 
-              {/* Time slots */}
+              {/* Time Slots */}
               {selectedDate && (
                 <div className="border-b border-solid px-5 py-4">
                   <div className="mb-3 flex items-center gap-2">
@@ -381,7 +393,6 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
                       })}
                     </span>
                   </div>
-
                   {loadingSlots ? (
                     <div className="flex items-center gap-2 text-sm text-gray-400">
                       <Loader2Icon size={16} className="animate-spin" />
@@ -412,11 +423,79 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
                 </div>
               )}
 
-              {/* Summary card */}
+              {/* Payment method — only show after date+time selected */}
+              {selectedDate && selectedTime && (
+                <div className="border-b border-solid px-5 py-4">
+                  <h4 className="mb-3 text-sm font-semibold">
+                    Forma de Pagamento
+                  </h4>
+                  <div className="space-y-2">
+                    {/* Always show "pay locally" */}
+                    <button
+                      onClick={() => setSelectedPayment("local")}
+                      className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
+                        selectedPayment === "local"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-gray-700 hover:border-gray-500"
+                      } `}
+                    >
+                      <div
+                        className={`rounded-lg p-2 ${selectedPayment === "local" ? "bg-primary/20" : "bg-gray-800"}`}
+                      >
+                        <BanknoteIcon size={18} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Pagar no local</p>
+                        <p className="text-xs text-gray-400">
+                          Pague em dinheiro ou cartão na chegada
+                        </p>
+                      </div>
+                      {selectedPayment === "local" && (
+                        <CheckCircle2Icon
+                          size={18}
+                          className="ml-auto text-primary"
+                        />
+                      )}
+                    </button>
+
+                    {/* Show Mercado Pago only when configured */}
+                    {hasMercadoPago && (
+                      <button
+                        onClick={() => setSelectedPayment("mercadopago")}
+                        className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
+                          selectedPayment === "mercadopago"
+                            ? "border-blue-500 bg-blue-500/10 text-blue-400"
+                            : "border-gray-700 hover:border-gray-500"
+                        } `}
+                      >
+                        <div
+                          className={`rounded-lg p-2 ${selectedPayment === "mercadopago" ? "bg-blue-500/20" : "bg-gray-800"}`}
+                        >
+                          <CreditCardIcon size={18} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">Mercado Pago</p>
+                          <p className="text-xs text-gray-400">
+                            Pague online com cartão, Pix ou boleto
+                          </p>
+                        </div>
+                        {selectedPayment === "mercadopago" && (
+                          <CheckCircle2Icon
+                            size={18}
+                            className="ml-auto text-blue-400"
+                          />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Summary */}
               {selectedDate && selectedTime && (
                 <div className="mx-5 my-4 rounded-lg border border-solid p-4">
                   <h4 className="mb-3 text-sm font-bold uppercase text-gray-400">
-                    Resumo da Reserva
+                    Resumo
                   </h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -443,13 +522,18 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
                       <span className="text-gray-400">Horário</span>
                       <span className="font-medium">{selectedTime}</span>
                     </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Pagamento</span>
+                      <span className="font-medium">
+                        {selectedPayment === "mercadopago"
+                          ? "Mercado Pago"
+                          : "No local"}
+                      </span>
+                    </div>
                     <div className="flex justify-between border-t border-solid pt-2">
-                      <span className="text-gray-400">Preço</span>
+                      <span className="text-gray-400">Total</span>
                       <span className="font-bold text-primary">
-                        {Intl.NumberFormat("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        }).format(Number(service.price))}
+                        {priceFormatted}
                       </span>
                     </div>
                   </div>
@@ -468,7 +552,11 @@ const ServiceItem = ({ service, barbershopName }: ServiceItemProps) => {
                 {booking && (
                   <Loader2Icon size={16} className="mr-2 animate-spin" />
                 )}
-                {booking ? "Agendando..." : "Confirmar Agendamento"}
+                {booking
+                  ? "Agendando..."
+                  : selectedPayment === "mercadopago"
+                    ? "Agendar e Pagar Online"
+                    : "Confirmar Agendamento"}
               </Button>
             )}
           </SheetFooter>

@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { serviceId, date } = await req.json()
+    const { serviceId, date, paymentMethod = "local" } = await req.json()
     if (!serviceId || !date) {
       return NextResponse.json(
         { error: "serviceId e date são obrigatórios" },
@@ -82,6 +82,9 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         serviceId,
         date: bookingDate,
+        paymentMethod:
+          paymentMethod === "mercadopago" ? "mercadopago" : "local",
+        paymentStatus: paymentMethod === "mercadopago" ? "pending" : "pending",
       },
       include: {
         service: {

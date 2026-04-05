@@ -84,6 +84,7 @@ model Barbershop {
   phones      String   @db.Text
   description String   @db.Text
   imageUrl    String   @db.Text
+  active      Boolean  @default(true)  // false when admin expired/inactive
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -96,14 +97,16 @@ model Barbershop {
 
 // ─── Relação Admin ↔ Barbearia (1-para-1) ────────────────────────────────────
 model BarbershopAdmin {
-  id           String @id @default(cuid())
-  userId       String @unique
-  barbershopId String @unique
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  barbershopId String    @unique
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   barbershop Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
 
-  assignedAt DateTime @default(now())
+  assignedAt    DateTime  @default(now())
+  expiresAt     DateTime? // null = sem expiração (superadmin define)
+  active        Boolean   @default(true)
 }
 
 // ─── Barbeiro ─────────────────────────────────────────────────────────────────
@@ -137,12 +140,15 @@ model BarbershopService {
 
 // ─── Agendamento ──────────────────────────────────────────────────────────────
 model Booking {
-  id        String   @id @default(uuid())
-  userId    String
-  serviceId String
-  date      DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(uuid())
+  userId        String
+  serviceId     String
+  date          DateTime
+  paymentMethod String   @default("local") // "local" | "mercadopago"
+  paymentStatus String   @default("pending") // "pending" | "paid" | "failed"
+  mpPaymentId   String?  // ID do pagamento no Mercado Pago
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   user    User              @relation(fields: [userId], references: [id])
   service BarbershopService @relation(fields: [serviceId], references: [id])
