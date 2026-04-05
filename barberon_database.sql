@@ -8,11 +8,11 @@
 --  ou via phpMyAdmin / DBeaver / TablePlus
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS `fsw-barber`
+CREATE DATABASE IF NOT EXISTS `comu8166_barbershop`
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
-USE `fsw-barber`;
+USE `comu8166_barbershop`;
 
 /*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
