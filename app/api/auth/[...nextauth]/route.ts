@@ -60,52 +60,49 @@ export const authOptions: NextAuthOptions = {
       }
       return true
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
+      // On first sign in, set id from user object
       if (user) {
-        token.role = (user as { role?: string }).role
         token.id = user.id
       }
-      // For Google OAuth, load role from DB since it's not in the OAuth user object
-      if (account?.provider === "google" && token.email) {
-        const dbUser = await db.user.findUnique({
-          where: { email: token.email as string },
-          include: { managedShop: true },
-        })
-        if (dbUser) {
-          // Auto-deactivate expired admin
-          if (
-            dbUser.role === "ADMIN" &&
-            dbUser.managedShop?.expiresAt &&
-            new Date(dbUser.managedShop.expiresAt) < new Date()
-          ) {
-            await db.barbershopAdmin.update({
-              where: { userId: dbUser.id },
-              data: { active: false },
-            })
-            await db.barbershop.update({
-              where: { id: dbUser.managedShop.barbershopId },
-              data: { active: false },
-            })
-            token.role = "CUSTOMER"
-          } else {
-            token.role = dbUser.role
+
+      // ALWAYS reload role from DB on every JWT creation/refresh
+      // This ensures admin role is always current
+      if (token.email) {
+        try {
+          const dbUser = await db.user.findUnique({
+            where: { email: token.email as string },
+            include: { managedShop: true },
+          })
+          if (dbUser) {
+            // Auto-deactivate expired admin
+            if (
+              dbUser.role === "ADMIN" &&
+              dbUser.managedShop?.expiresAt &&
+              new Date(dbUser.managedShop.expiresAt) < new Date()
+            ) {
+              await db.barbershopAdmin.update({
+                where: { userId: dbUser.id },
+                data: { active: false },
+              })
+              await db.barbershop.update({
+                where: { id: dbUser.managedShop.barbershopId },
+                data: { active: false },
+              })
+              token.role = "CUSTOMER"
+            } else if (
+              dbUser.role === "ADMIN" &&
+              dbUser.managedShop?.active === false
+            ) {
+              // Admin manually deactivated
+              token.role = "CUSTOMER"
+            } else {
+              token.role = dbUser.role
+            }
+            token.id = dbUser.id
           }
-          token.id = dbUser.id
-        }
-      }
-      // Always ensure role is loaded and expiry checked
-      if (!token.role && token.email) {
-        const dbUser = await db.user.findUnique({
-          where: { email: token.email as string },
-          include: { managedShop: true },
-        })
-        if (dbUser) {
-          if (dbUser.role === "ADMIN" && dbUser.managedShop?.active === false) {
-            token.role = "CUSTOMER"
-          } else {
-            token.role = dbUser.role
-          }
-          token.id = dbUser.id
+        } catch {
+          // Keep existing token if DB fails
         }
       }
       return token
@@ -119,20 +116,16 @@ export const authOptions: NextAuthOptions = {
       }
       return session
     },
-    // Prevent Google login from redirecting to /admin
     async redirect({ url, baseUrl }) {
-      // If the URL is the admin area and no explicit callbackUrl, go to home
-      if (url.startsWith(baseUrl + "/admin")) {
-        return baseUrl
-      }
-      // Allow relative URLs
+      // Allow relative URLs — honour whatever callbackUrl was set
       if (url.startsWith("/")) {
-        // Don't auto-redirect non-admins to admin
-        if (url.startsWith("/admin")) return baseUrl
         return `${baseUrl}${url}`
       }
-      // Allow same-origin URLs
-      if (url.startsWith(baseUrl)) return url
+      // Allow same-origin URLs (includes /admin)
+      if (url.startsWith(baseUrl)) {
+        return url
+      }
+      // Default: go home
       return baseUrl
     },
   },

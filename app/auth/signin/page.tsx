@@ -41,6 +41,8 @@ function SignInForm() {
       if (result?.error) {
         setError("Email ou senha incorretos.")
       } else {
+        // Refresh session then navigate so middleware sees updated role
+        router.refresh()
         router.push(callbackUrl)
       }
     } catch {
