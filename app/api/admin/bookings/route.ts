@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { db } from "@/app/_lib/prisma"
 import { getAdminContext } from "@/app/_lib/admin-auth"
 import { NextResponse } from "next/server"
@@ -5,11 +7,13 @@ import { NextResponse } from "next/server"
 export async function GET() {
   try {
     const ctx = await getAdminContext()
-    if (!ctx) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    if (!ctx)
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
 
-    const where = ctx.role === "ADMIN" && ctx.barbershopId
-      ? { service: { barbershopId: ctx.barbershopId } }
-      : {}
+    const where =
+      ctx.role === "ADMIN" && ctx.barbershopId
+        ? { service: { barbershopId: ctx.barbershopId } }
+        : {}
 
     const bookings = await db.booking.findMany({
       where,
@@ -23,6 +27,9 @@ export async function GET() {
     })
     return NextResponse.json(bookings)
   } catch {
-    return NextResponse.json({ error: "Erro ao buscar agendamentos" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Erro ao buscar agendamentos" },
+      { status: 500 },
+    )
   }
 }

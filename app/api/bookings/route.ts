@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { db } from "@/app/_lib/prisma"
 import { getServerSession } from "next-auth"
 import { NextRequest, NextResponse } from "next/server"

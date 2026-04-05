@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { db } from "@/app/_lib/prisma"
 import { getAdminContext } from "@/app/_lib/admin-auth"
 import { NextResponse } from "next/server"
@@ -5,7 +7,8 @@ import { NextResponse } from "next/server"
 export async function GET() {
   try {
     const ctx = await getAdminContext()
-    if (!ctx) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    if (!ctx)
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
 
     const isSuperAdmin = ctx.role === "SUPERADMIN"
     const shopId = ctx.barbershopId
@@ -33,9 +36,7 @@ export async function GET() {
       isSuperAdmin
         ? db.user.count({ where: { role: "BARBER" } })
         : db.barber.count({ where: { barbershopId: shopId! } }),
-      isSuperAdmin
-        ? db.user.count({ where: { role: "ADMIN" } })
-        : 0,
+      isSuperAdmin ? db.user.count({ where: { role: "ADMIN" } }) : 0,
       db.booking.findMany({
         take: 5,
         orderBy: { createdAt: "desc" },
@@ -67,6 +68,9 @@ export async function GET() {
       isSuperAdmin,
     })
   } catch {
-    return NextResponse.json({ error: "Erro ao buscar estatísticas" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Erro ao buscar estatísticas" },
+      { status: 500 },
+    )
   }
 }

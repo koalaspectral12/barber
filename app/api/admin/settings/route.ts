@@ -1,9 +1,13 @@
+export const dynamic = "force-dynamic"
+
 import { db } from "@/app/_lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function GET() {
   try {
-    let settings = await db.appSettings.findUnique({ where: { id: "singleton" } })
+    let settings = await db.appSettings.findUnique({
+      where: { id: "singleton" },
+    })
     if (!settings) {
       settings = await db.appSettings.create({
         data: { id: "singleton", appName: "Barberon", banners: "[]" },
@@ -11,10 +15,19 @@ export async function GET() {
     }
     return NextResponse.json({
       ...settings,
-      banners: (() => { try { return JSON.parse(settings!.banners) } catch { return [] } })(),
+      banners: (() => {
+        try {
+          return JSON.parse(settings!.banners)
+        } catch {
+          return []
+        }
+      })(),
     })
   } catch {
-    return NextResponse.json({ error: "Erro ao buscar configurações" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Erro ao buscar configurações" },
+      { status: 500 },
+    )
   }
 }
 
@@ -34,15 +47,26 @@ export async function PUT(request: NextRequest) {
       update: {
         ...(appName !== undefined && { appName }),
         ...(logoUrl !== undefined && { logoUrl }),
-        ...(banners !== undefined && { banners: JSON.stringify(Array.isArray(banners) ? banners : []) }),
+        ...(banners !== undefined && {
+          banners: JSON.stringify(Array.isArray(banners) ? banners : []),
+        }),
       },
     })
 
     return NextResponse.json({
       ...settings,
-      banners: (() => { try { return JSON.parse(settings.banners) } catch { return [] } })(),
+      banners: (() => {
+        try {
+          return JSON.parse(settings.banners)
+        } catch {
+          return []
+        }
+      })(),
     })
   } catch {
-    return NextResponse.json({ error: "Erro ao salvar configurações" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Erro ao salvar configurações" },
+      { status: 500 },
+    )
   }
 }

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { db } from "@/app/_lib/prisma"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import NextAuth, { NextAuthOptions } from "next-auth"

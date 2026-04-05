@@ -1,11 +1,17 @@
+export const dynamic = "force-dynamic"
+
 import { db } from "@/app/_lib/prisma"
 import { getAdminContext } from "@/app/_lib/admin-auth"
 import { NextRequest, NextResponse } from "next/server"
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } },
+) {
   try {
     const ctx = await getAdminContext()
-    if (!ctx) return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    if (!ctx)
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
 
     if (ctx.role === "ADMIN") {
       const booking = await db.booking.findUnique({
@@ -20,6 +26,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     await db.booking.delete({ where: { id: params.id } })
     return NextResponse.json({ message: "Agendamento cancelado com sucesso" })
   } catch {
-    return NextResponse.json({ error: "Erro ao cancelar agendamento" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Erro ao cancelar agendamento" },
+      { status: 500 },
+    )
   }
 }

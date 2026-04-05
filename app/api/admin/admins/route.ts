@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { db } from "@/app/_lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
@@ -10,14 +12,19 @@ export async function GET() {
       where: { role: { in: ["ADMIN", "SUPERADMIN"] } },
       include: {
         managedShop: {
-          include: { barbershop: { select: { id: true, name: true, imageUrl: true } } },
+          include: {
+            barbershop: { select: { id: true, name: true, imageUrl: true } },
+          },
         },
       },
       orderBy: { createdAt: "desc" },
     })
     return NextResponse.json(admins)
   } catch {
-    return NextResponse.json({ error: "Erro ao buscar admins" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Erro ao buscar admins" },
+      { status: 500 },
+    )
   }
 }
 
@@ -28,12 +35,18 @@ export async function POST(request: NextRequest) {
     const { name, email, password, barbershopId, role } = body
 
     if (!name || !email || !password) {
-      return NextResponse.json({ error: "Nome, email e senha são obrigatórios" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Nome, email e senha são obrigatórios" },
+        { status: 400 },
+      )
     }
 
     const existing = await db.user.findUnique({ where: { email } })
     if (existing) {
-      return NextResponse.json({ error: "Este email já está cadastrado" }, { status: 409 })
+      return NextResponse.json(
+        { error: "Este email já está cadastrado" },
+        { status: 409 },
+      )
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
@@ -41,9 +54,14 @@ export async function POST(request: NextRequest) {
 
     // Verificar se já existe admin para essa barbearia
     if (barbershopId && userRole === "ADMIN") {
-      const existingAdmin = await db.barbershopAdmin.findUnique({ where: { barbershopId } })
+      const existingAdmin = await db.barbershopAdmin.findUnique({
+        where: { barbershopId },
+      })
       if (existingAdmin) {
-        return NextResponse.json({ error: "Esta barbearia já possui um admin associado" }, { status: 409 })
+        return NextResponse.json(
+          { error: "Esta barbearia já possui um admin associado" },
+          { status: 409 },
+        )
       }
     }
 
@@ -54,14 +72,15 @@ export async function POST(request: NextRequest) {
         email,
         password: hashedPassword,
         role: userRole,
-        ...(barbershopId && userRole === "ADMIN" && {
-          managedShop: {
-            create: {
-              id: randomUUID(),
-              barbershopId,
+        ...(barbershopId &&
+          userRole === "ADMIN" && {
+            managedShop: {
+              create: {
+                id: randomUUID(),
+                barbershopId,
+              },
             },
-          },
-        }),
+          }),
       },
       include: {
         managedShop: {

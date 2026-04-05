@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { db } from "@/app/_lib/prisma"
 import { getServerSession } from "next-auth"
 import { NextResponse } from "next/server"
@@ -24,7 +26,11 @@ export async function GET() {
       },
     })
 
-    if (!user) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+    if (!user)
+      return NextResponse.json(
+        { error: "Usuário não encontrado" },
+        { status: 404 },
+      )
 
     return NextResponse.json({
       id: user.id,
@@ -35,6 +41,9 @@ export async function GET() {
       barbershopId: user.managedShop?.barbershopId || null,
     })
   } catch {
-    return NextResponse.json({ error: "Erro ao buscar dados do admin" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Erro ao buscar dados do admin" },
+      { status: 500 },
+    )
   }
 }
