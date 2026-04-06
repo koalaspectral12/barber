@@ -15,24 +15,53 @@ interface BarbershopsPageProps {
 const BarbershopsPage = async ({ searchParams }: BarbershopsPageProps) => {
   let barbershops: Awaited<ReturnType<typeof db.barbershop.findMany>> = []
 
+  const hasSearch = !!(searchParams?.title || searchParams?.service)
+
   try {
+    // Try with active filter first
     barbershops = await db.barbershop.findMany({
       where: {
         active: true,
-        OR: [
-          searchParams?.title ? { name: { contains: searchParams.title } } : {},
-          searchParams?.service
-            ? {
-                services: {
-                  some: { name: { contains: searchParams.service } },
-                },
-              }
-            : {},
-        ],
+        ...(hasSearch && {
+          OR: [
+            searchParams?.title
+              ? { name: { contains: searchParams.title } }
+              : {},
+            searchParams?.service
+              ? {
+                  services: {
+                    some: { name: { contains: searchParams.service } },
+                  },
+                }
+              : {},
+          ],
+        }),
       },
     })
   } catch {
-    // DB not available — render empty state
+    // Fallback: query without active filter (production DB may not have column yet)
+    try {
+      barbershops = await db.barbershop.findMany({
+        where: hasSearch
+          ? {
+              OR: [
+                searchParams?.title
+                  ? { name: { contains: searchParams.title } }
+                  : {},
+                searchParams?.service
+                  ? {
+                      services: {
+                        some: { name: { contains: searchParams.service } },
+                      },
+                    }
+                  : {},
+              ],
+            }
+          : undefined,
+      })
+    } catch {
+      // DB not available
+    }
   }
 
   const term = searchParams?.title || searchParams?.service || ""

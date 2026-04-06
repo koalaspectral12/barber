@@ -18,8 +18,10 @@ function SignInForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") || "/"
+  const defaultTab =
+    searchParams.get("tab") === "register" ? "register" : "signin"
 
-  const [tab, setTab] = useState<"signin" | "register">("signin")
+  const [tab, setTab] = useState<"signin" | "register">(defaultTab)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
