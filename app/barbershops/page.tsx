@@ -15,53 +15,23 @@ interface BarbershopsPageProps {
 const BarbershopsPage = async ({ searchParams }: BarbershopsPageProps) => {
   let barbershops: Awaited<ReturnType<typeof db.barbershop.findMany>> = []
 
-  const hasSearch = !!(searchParams?.title || searchParams?.service)
-
   try {
-    // Try with active filter first
-    barbershops = await db.barbershop.findMany({
-      where: {
-        active: true,
-        ...(hasSearch && {
-          OR: [
-            searchParams?.title
-              ? { name: { contains: searchParams.title } }
-              : {},
-            searchParams?.service
-              ? {
-                  services: {
-                    some: { name: { contains: searchParams.service } },
-                  },
-                }
-              : {},
-          ],
-        }),
-      },
-    })
-  } catch {
-    // Fallback: query without active filter (production DB may not have column yet)
+    const orFilter = [
+      searchParams?.title ? { name: { contains: searchParams.title } } : {},
+      searchParams?.service
+        ? { services: { some: { name: { contains: searchParams.service } } } }
+        : {},
+    ]
+    // Try with active filter; fall back if column doesn't exist yet
     try {
       barbershops = await db.barbershop.findMany({
-        where: hasSearch
-          ? {
-              OR: [
-                searchParams?.title
-                  ? { name: { contains: searchParams.title } }
-                  : {},
-                searchParams?.service
-                  ? {
-                      services: {
-                        some: { name: { contains: searchParams.service } },
-                      },
-                    }
-                  : {},
-              ],
-            }
-          : undefined,
+        where: { active: true, OR: orFilter },
       })
     } catch {
-      // DB not available
+      barbershops = await db.barbershop.findMany({ where: { OR: orFilter } })
     }
+  } catch {
+    // DB not available — render empty state
   }
 
   const term = searchParams?.title || searchParams?.service || ""

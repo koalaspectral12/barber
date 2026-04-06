@@ -8,35 +8,8 @@ import { quickSearchOptions } from "./_constants/search"
 import Search from "./_components/search"
 import BannerCarousel from "./_components/banner-carousel"
 import UpcomingBookings from "./_components/upcoming-bookings"
-import HomeAuthBanner from "./_components/home-auth-banner"
 import Link from "next/link"
 import Image from "next/image"
-
-async function getBarbershops() {
-  // Try with active filter first; fall back to all shops if column doesn't exist
-  try {
-    const shops = await db.barbershop.findMany({
-      where: { active: true },
-      take: 10,
-    })
-    return shops
-  } catch {
-    return db.barbershop.findMany({ take: 10 })
-  }
-}
-
-async function getPopularBarbershops() {
-  try {
-    const shops = await db.barbershop.findMany({
-      where: { active: true },
-      orderBy: { name: "asc" },
-      take: 10,
-    })
-    return shops
-  } catch {
-    return db.barbershop.findMany({ orderBy: { name: "asc" }, take: 10 })
-  }
-}
 
 const Home = async () => {
   let barbershops: Awaited<ReturnType<typeof db.barbershop.findMany>> = []
@@ -45,15 +18,9 @@ const Home = async () => {
   let banners: string[] = []
 
   try {
-    const [shops, popular, settings] = await Promise.all([
-      getBarbershops(),
-      getPopularBarbershops(),
-      db.appSettings
-        .findUnique({ where: { id: "singleton" } })
-        .catch(() => null),
-    ])
-    barbershops = shops
-    popularBarbershops = popular
+    const settings = await db.appSettings.findUnique({
+      where: { id: "singleton" },
+    })
     appName = settings?.appName || "Barberon"
     banners = (() => {
       try {
@@ -62,6 +29,28 @@ const Home = async () => {
         return []
       }
     })()
+
+    // Try with active filter first; fall back if column doesn't exist yet
+    try {
+      const [shops, popular] = await Promise.all([
+        db.barbershop.findMany({ where: { active: true }, take: 10 }),
+        db.barbershop.findMany({
+          where: { active: true },
+          orderBy: { name: "asc" },
+          take: 10,
+        }),
+      ])
+      barbershops = shops
+      popularBarbershops = popular
+    } catch {
+      // Column may not exist in production yet — fetch without filter
+      const [shops, popular] = await Promise.all([
+        db.barbershop.findMany({ take: 10 }),
+        db.barbershop.findMany({ orderBy: { name: "asc" }, take: 10 }),
+      ])
+      barbershops = shops
+      popularBarbershops = popular
+    }
   } catch {
     // DB not available at build time — render with defaults
   }
@@ -78,8 +67,6 @@ const Home = async () => {
             month: "long",
           })}
         </p>
-
-        <HomeAuthBanner />
 
         <div className="mt-6">
           <Search />
@@ -114,15 +101,9 @@ const Home = async () => {
           Recomendados
         </h2>
         <div className="flex gap-4 overflow-auto [&::-webkit-scrollbar]:hidden">
-          {barbershops.length === 0 ? (
-            <p className="text-sm text-gray-500">
-              Nenhuma barbearia encontrada.
-            </p>
-          ) : (
-            barbershops.map((barbershop) => (
-              <BarbershopItem key={barbershop.id} barbershop={barbershop} />
-            ))
-          )}
+          {barbershops.map((barbershop) => (
+            <BarbershopItem key={barbershop.id} barbershop={barbershop} />
+          ))}
         </div>
 
         <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
