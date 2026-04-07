@@ -105,7 +105,7 @@ export default function AdminDashboard() {
       <div>
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
         <p className="mt-1 text-sm text-gray-400">
-          Visão geral do sistema FSW Barber
+          Visão geral do sistema Barberon
         </p>
       </div>
 

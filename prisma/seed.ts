@@ -1,5 +1,5 @@
 /**
- * SEED DE TESTE — FSW Barber
+ * SEED DE TESTE — Barberon
  * ─────────────────────────────────────────────────────────────────
  * Cria:
  *   • 1  SUPERADMIN  — controla tudo e cadastra barbeiros
@@ -338,7 +338,12 @@ const CUSTOMER_USERS = [
 function randomDate(daysOffset: number): Date {
   const d = new Date()
   d.setDate(d.getDate() + daysOffset)
-  d.setHours(9 + Math.floor(Math.random() * 9), [0, 30][Math.floor(Math.random() * 2)], 0, 0)
+  d.setHours(
+    9 + Math.floor(Math.random() * 9),
+    [0, 30][Math.floor(Math.random() * 2)],
+    0,
+    0,
+  )
   return d
 }
 
@@ -378,7 +383,9 @@ async function main() {
       image: "https://api.dicebear.com/7.x/avataaars/svg?seed=SuperAdmin",
     },
   })
-  console.log(`   ✓ ${superadmin.name} — ${superadmin.email} [${superadmin.role}]\n`)
+  console.log(
+    `   ✓ ${superadmin.name} — ${superadmin.email} [${superadmin.role}]\n`,
+  )
 
   // ────────────────────────────────────────────────────────────────────────────
   // 3. BARBEARIAS + SERVIÇOS
@@ -400,9 +407,7 @@ async function main() {
     })
 
     createdBarbershops.push(shop)
-    console.log(
-      `   ✓ ${shop.name} — ${shop.services.length} serviços criados`,
-    )
+    console.log(`   ✓ ${shop.name} — ${shop.services.length} serviços criados`)
   }
   console.log()
 
@@ -433,9 +438,7 @@ async function main() {
     })
 
     createdAdmins.push(admin)
-    console.log(
-      `   ✓ ${admin.name} — ${admin.email} → gerencia "${shop.name}"`,
-    )
+    console.log(`   ✓ ${admin.name} — ${admin.email} → gerencia "${shop.name}"`)
   }
   console.log()
 
@@ -513,7 +516,8 @@ async function main() {
       if (bi >= 3) break
       const shopIdx = (ci + bi) % createdBarbershops.length
       const shop = createdBarbershops[shopIdx]
-      const service = shop.services[Math.floor(Math.random() * shop.services.length)]
+      const service =
+        shop.services[Math.floor(Math.random() * shop.services.length)]
 
       // Alterna entre agendamentos passados e futuros
       const daysOffset = bi === 0 ? -7 : bi === 1 ? 3 : 10
@@ -543,7 +547,9 @@ async function main() {
   console.log(`   👑 Superadmin : 1`)
   console.log(`   🔑 Admins     : ${createdAdmins.length} (1 por barbearia)`)
   console.log(`   💈 Barbearias : ${createdBarbershops.length}`)
-  console.log(`   🛎  Serviços   : ${createdBarbershops.reduce((a, s) => a + s.services.length, 0)} (3 por barbearia)`)
+  console.log(
+    `   🛎  Serviços   : ${createdBarbershops.reduce((a, s) => a + s.services.length, 0)} (3 por barbearia)`,
+  )
   console.log(`   ✂️  Barbeiros  : ${createdBarbers.length} (2 por barbearia)`)
   console.log(`   👤 Clientes   : ${createdCustomers.length}`)
   console.log(`   📅 Agendamentos: ${totalBookings}`)
