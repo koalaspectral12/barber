@@ -15,23 +15,24 @@ interface BarbershopsPageProps {
 const BarbershopsPage = async ({ searchParams }: BarbershopsPageProps) => {
   let barbershops: Awaited<ReturnType<typeof db.barbershop.findMany>> = []
 
+  const orFilter = [
+    searchParams?.title ? { name: { contains: searchParams.title } } : {},
+    searchParams?.service
+      ? { services: { some: { name: { contains: searchParams.service } } } }
+      : {},
+  ]
+
   try {
-    const orFilter = [
-      searchParams?.title ? { name: { contains: searchParams.title } } : {},
-      searchParams?.service
-        ? { services: { some: { name: { contains: searchParams.service } } } }
-        : {},
-    ]
-    // Try with active filter; fall back if column doesn't exist yet
     try {
       barbershops = await db.barbershop.findMany({
         where: { active: true, OR: orFilter },
       })
     } catch {
+      // Column 'active' not yet in prod DB — fetch without filter
       barbershops = await db.barbershop.findMany({ where: { OR: orFilter } })
     }
   } catch {
-    // DB not available — render empty state
+    // DB unavailable
   }
 
   const term = searchParams?.title || searchParams?.service || ""

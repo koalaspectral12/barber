@@ -26,9 +26,7 @@ export async function GET() {
     const bookings = await db.booking.findMany({
       where: { userId: user.id },
       include: {
-        service: {
-          include: { barbershop: true },
-        },
+        service: { include: { barbershop: true } },
       },
       orderBy: { date: "desc" },
     })
@@ -58,7 +56,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { serviceId, date, paymentMethod = "local" } = await req.json()
+    const body = await req.json()
+    const { serviceId, date, paymentMethod = "local" } = body
+
     if (!serviceId || !date) {
       return NextResponse.json(
         { error: "serviceId e date são obrigatórios" },
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
     const bookingDate = new Date(date)
 
-    // Check if the slot is already booked
+    // Check if slot already taken
     const conflict = await db.booking.findFirst({
       where: { serviceId, date: bookingDate },
     })
@@ -79,21 +79,26 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const booking = await db.booking.create({
-      data: {
-        userId: user.id,
-        serviceId,
-        date: bookingDate,
-        paymentMethod:
-          paymentMethod === "mercadopago" ? "mercadopago" : "local",
-        paymentStatus: paymentMethod === "mercadopago" ? "pending" : "pending",
-      },
-      include: {
-        service: {
-          include: { barbershop: true },
+    // Try creating with payment fields first; fall back if columns don't exist in prod yet
+    let booking
+    try {
+      booking = await db.booking.create({
+        data: {
+          userId: user.id,
+          serviceId,
+          date: bookingDate,
+          paymentMethod: paymentMethod === "mercadopago" ? "mercadopago" : "local",
+          paymentStatus: "pending",
         },
-      },
-    })
+        include: { service: { include: { barbershop: true } } },
+      })
+    } catch {
+      // Fallback: paymentMethod/paymentStatus columns may not exist yet in prod DB
+      booking = await db.booking.create({
+        data: { userId: user.id, serviceId, date: bookingDate },
+        include: { service: { include: { barbershop: true } } },
+      })
+    }
 
     return NextResponse.json(booking, { status: 201 })
   } catch (err) {

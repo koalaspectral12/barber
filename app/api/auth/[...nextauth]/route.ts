@@ -20,94 +20,93 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
-
-        const user = await db.user.findUnique({
-          where: { email: credentials.email },
-        })
-
-        if (!user || !user.password) return null
-
-        const bcrypt = await import("bcryptjs")
-        const valid = await bcrypt.compare(credentials.password, user.password)
-        if (!valid) return null
-
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          image: user.image,
-          role: user.role,
+        try {
+          const user = await db.user.findUnique({
+            where: { email: credentials.email },
+          })
+          if (!user || !user.password) return null
+          const bcrypt = await import("bcryptjs")
+          const valid = await bcrypt.compare(
+            credentials.password,
+            user.password,
+          )
+          if (!valid) return null
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            role: user.role,
+          }
+        } catch {
+          return null
         }
       },
     }),
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    async signIn({ account }) {
-      // Always allow sign-in; role assignment is handled in jwt callback
-      void account
-      return true
-    },
-    async jwt({ token, user, account, trigger }) {
-      // On initial sign-in via credentials, user object is populated
+    async jwt({ token, user, account }) {
+      // Step 1: seed from authorize() or OAuth user on first call
       if (user) {
-        token.role = (user as { role?: string }).role
         token.id = user.id
+        token.role = (user as { role?: string }).role ?? "CUSTOMER"
       }
 
-      // Always refresh role from DB on first login OR on session update trigger
-      // This covers: Google OAuth, credentials, and session refreshes
-      if (account || trigger === "update" || !token.role) {
-        if (token.email) {
-          try {
-            const dbUser = await db.user.findUnique({
-              where: { email: token.email as string },
-              include: { managedShop: true },
-            })
-            if (dbUser) {
-              // Auto-deactivate expired admin
-              if (
-                dbUser.role === "ADMIN" &&
-                dbUser.managedShop?.expiresAt &&
-                new Date(dbUser.managedShop.expiresAt) < new Date()
-              ) {
-                await db.barbershopAdmin.update({
-                  where: { userId: dbUser.id },
-                  data: { active: false },
-                })
-                await db.barbershop.update({
+      // Step 2: Always re-read role from DB on first sign-in (account present)
+      // OR when token is missing role/id (new token after server restart).
+      const needsDbLoad = !!account || !token.role || !token.id
+      if (needsDbLoad && token.email) {
+        try {
+          const dbUser = await db.user.findUnique({
+            where: { email: token.email as string },
+            include: { managedShop: true },
+          })
+          if (dbUser) {
+            if (
+              dbUser.role === "ADMIN" &&
+              dbUser.managedShop?.expiresAt &&
+              new Date(dbUser.managedShop.expiresAt) < new Date()
+            ) {
+              await db.barbershopAdmin
+                .update({ where: { userId: dbUser.id }, data: { active: false } })
+                .catch(() => null)
+              await db.barbershop
+                .update({
                   where: { id: dbUser.managedShop.barbershopId },
                   data: { active: false },
                 })
-                token.role = "CUSTOMER"
-              } else if (
-                dbUser.role === "ADMIN" &&
-                dbUser.managedShop?.active === false
-              ) {
-                token.role = "CUSTOMER"
-              } else {
-                token.role = dbUser.role
-              }
-              token.id = dbUser.id
+                .catch(() => null)
+              token.role = "CUSTOMER"
+            } else if (
+              dbUser.role === "ADMIN" &&
+              dbUser.managedShop?.active === false
+            ) {
+              token.role = "CUSTOMER"
+            } else {
+              token.role = dbUser.role
             }
-          } catch {
-            // DB error — keep existing token values
+            token.id = dbUser.id
           }
+        } catch {
+          // DB unreachable — keep whatever we have
         }
       }
+
       return token
     },
+
     async session({ session, token }) {
       if (session.user) {
         ;(session.user as { role?: string; id?: string }).role =
-          token.role as string
+          (token.role as string) ?? "CUSTOMER"
         ;(session.user as { role?: string; id?: string }).id =
           token.id as string
       }
       return session
     },
+
     async redirect({ url, baseUrl }) {
-      // Allow same-origin and relative URLs as-is
       if (url.startsWith("/")) return `${baseUrl}${url}`
       if (url.startsWith(baseUrl)) return url
       return baseUrl

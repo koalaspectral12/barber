@@ -17,42 +17,46 @@ const Home = async () => {
   let appName = "Barberon"
   let banners: string[] = []
 
+  // Fetch app settings
   try {
     const settings = await db.appSettings.findUnique({
       where: { id: "singleton" },
     })
-    appName = settings?.appName || "Barberon"
-    banners = (() => {
+    if (settings) {
+      appName = settings.appName || "Barberon"
       try {
-        return JSON.parse(settings?.banners || "[]")
+        const parsed = JSON.parse(settings.banners || "[]")
+        if (Array.isArray(parsed)) banners = parsed
       } catch {
-        return []
+        banners = []
       }
-    })()
-
-    // Try with active filter first; fall back if column doesn't exist yet
-    try {
-      const [shops, popular] = await Promise.all([
-        db.barbershop.findMany({ where: { active: true }, take: 10 }),
-        db.barbershop.findMany({
-          where: { active: true },
-          orderBy: { name: "asc" },
-          take: 10,
-        }),
-      ])
-      barbershops = shops
-      popularBarbershops = popular
-    } catch {
-      // Column may not exist in production yet — fetch without filter
-      const [shops, popular] = await Promise.all([
-        db.barbershop.findMany({ take: 10 }),
-        db.barbershop.findMany({ orderBy: { name: "asc" }, take: 10 }),
-      ])
-      barbershops = shops
-      popularBarbershops = popular
     }
   } catch {
-    // DB not available at build time — render with defaults
+    // DB unavailable
+  }
+
+  // Fetch barbershops — try with active filter, fall back to all
+  try {
+    try {
+      barbershops = await db.barbershop.findMany({
+        where: { active: true },
+        take: 10,
+      })
+      popularBarbershops = await db.barbershop.findMany({
+        where: { active: true },
+        orderBy: { name: "asc" },
+        take: 10,
+      })
+    } catch {
+      // Column 'active' not yet migrated in production DB
+      barbershops = await db.barbershop.findMany({ take: 10 })
+      popularBarbershops = await db.barbershop.findMany({
+        orderBy: { name: "asc" },
+        take: 10,
+      })
+    }
+  } catch {
+    // DB unreachable
   }
 
   return (
@@ -100,20 +104,32 @@ const Home = async () => {
         <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
           Recomendados
         </h2>
-        <div className="flex gap-4 overflow-auto [&::-webkit-scrollbar]:hidden">
-          {barbershops.map((barbershop) => (
-            <BarbershopItem key={barbershop.id} barbershop={barbershop} />
-          ))}
-        </div>
+        {barbershops.length === 0 ? (
+          <p className="py-4 text-sm text-gray-500">
+            Nenhuma barbearia cadastrada ainda.
+          </p>
+        ) : (
+          <div className="flex gap-4 overflow-auto [&::-webkit-scrollbar]:hidden">
+            {barbershops.map((barbershop) => (
+              <BarbershopItem key={barbershop.id} barbershop={barbershop} />
+            ))}
+          </div>
+        )}
 
         <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
           Populares
         </h2>
-        <div className="flex gap-4 overflow-auto [&::-webkit-scrollbar]:hidden">
-          {popularBarbershops.map((barbershop) => (
-            <BarbershopItem key={barbershop.id} barbershop={barbershop} />
-          ))}
-        </div>
+        {popularBarbershops.length === 0 ? (
+          <p className="py-4 text-sm text-gray-500">
+            Nenhuma barbearia cadastrada ainda.
+          </p>
+        ) : (
+          <div className="flex gap-4 overflow-auto [&::-webkit-scrollbar]:hidden">
+            {popularBarbershops.map((barbershop) => (
+              <BarbershopItem key={barbershop.id} barbershop={barbershop} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

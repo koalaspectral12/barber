@@ -11,21 +11,24 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 
 interface BarbershopPageProps {
-  params: {
-    id: string
-  }
+  params: { id: string }
 }
 
 const BarbershopPage = async ({ params }: BarbershopPageProps) => {
-  const barbershop = await db.barbershop.findUnique({
-    where: { id: params.id },
-    include: { services: true, paymentConfig: true },
-  })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let barbershop: any = null
 
-  // active defaults to true if column doesn't exist yet in production
-  if (!barbershop || barbershop.active === false) {
+  try {
+    barbershop = await db.barbershop.findUnique({
+      where: { id: params.id },
+      include: { services: true, paymentConfig: true },
+    })
+  } catch {
     return notFound()
   }
+
+  if (!barbershop) return notFound()
+  if (barbershop.active === false) return notFound()
 
   const phones: string[] = (() => {
     try {
@@ -35,9 +38,12 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
     }
   })()
 
+  const hasMercadoPago = !!(
+    barbershop.paymentConfig?.active && barbershop.paymentConfig?.mpPublicKey
+  )
+
   return (
     <div>
-      {/* IMAGEM */}
       <div className="relative h-[250px] w-full">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -45,7 +51,6 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
           src={barbershop.imageUrl}
           className="h-full w-full object-cover"
         />
-
         <Button
           size="icon"
           variant="secondary"
@@ -56,7 +61,6 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
             <ChevronLeftIcon />
           </Link>
         </Button>
-
         <Sheet>
           <SheetTrigger asChild>
             <Button
@@ -71,7 +75,6 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
         </Sheet>
       </div>
 
-      {/* TÍTULO */}
       <div className="border-b border-solid p-5">
         <h1 className="mb-3 text-xl font-bold">{barbershop.name}</h1>
         <div className="mb-2 flex items-center gap-2">
@@ -84,36 +87,33 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
         </div>
       </div>
 
-      {/* DESCRIÇÃO */}
       <div className="space-y-2 border-b border-solid p-5">
         <h2 className="text-xs font-bold uppercase text-gray-400">Sobre nós</h2>
         <p className="text-justify text-sm">{barbershop.description}</p>
       </div>
 
-      {/* SERVIÇOS */}
       <div className="space-y-3 border-b border-solid p-5">
         <h2 className="text-xs font-bold uppercase text-gray-400">Serviços</h2>
         <div className="space-y-3">
-          {barbershop.services.map((service) => (
-            <ServiceItem
-              key={service.id}
-              service={service}
-              barbershopName={barbershop.name}
-              hasMercadoPago={
-                !!(
-                  barbershop.paymentConfig?.active &&
-                  barbershop.paymentConfig?.mpPublicKey
-                )
-              }
-              mpPublicKey={barbershop.paymentConfig?.mpPublicKey ?? undefined}
-            />
-          ))}
+          {(barbershop.services ?? []).map(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (service: any) => (
+              <ServiceItem
+                key={service.id}
+                service={service}
+                barbershopName={barbershop.name}
+                hasMercadoPago={hasMercadoPago}
+                mpPublicKey={
+                  barbershop.paymentConfig?.mpPublicKey ?? undefined
+                }
+              />
+            ),
+          )}
         </div>
       </div>
 
-      {/* CONTATO */}
       <div className="space-y-3 p-5">
-        {phones.map((phone) => (
+        {phones.map((phone: string) => (
           <PhoneItem key={phone} phone={phone} />
         ))}
       </div>

@@ -6,11 +6,12 @@ export default withAuth(
     const token = req.nextauth.token
     const pathname = req.nextUrl.pathname
 
-    // Se for rota do admin e o usuário não for admin/superadmin
     if (pathname.startsWith("/admin")) {
       const role = token?.role as string | undefined
       if (!role || !["ADMIN", "SUPERADMIN"].includes(role)) {
-        return NextResponse.redirect(new URL("/auth/signin?callbackUrl=/admin", req.url))
+        const loginUrl = new URL("/auth/signin", req.url)
+        loginUrl.searchParams.set("callbackUrl", pathname)
+        return NextResponse.redirect(loginUrl)
       }
     }
 
@@ -18,7 +19,8 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
+      // Always run the middleware function above for matched routes
+      authorized: () => true,
     },
     pages: {
       signIn: "/auth/signin",
