@@ -1,0 +1,27 @@
+# Barberon — Apache rewrite rules
+Options -Indexes
+Options +FollowSymLinks
+RewriteEngine On
+
+# Redirect barbershop detail
+RewriteRule ^barbershop/([^/]+)/?$  /pages/barbershop.php?id=$1  [QSA,L]
+RewriteRule ^barbearias/?$          /pages/barbershops.php        [QSA,L]
+RewriteRule ^agendamentos/?$        /pages/bookings.php           [QSA,L]
+RewriteRule ^entrar/?$              /pages/login.php              [QSA,L]
+
+# Block access to includes
+RewriteRule ^includes/  - [F,L]
+
+# Security headers
+<IfModule mod_headers.c>
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# PHP settings
+<IfModule mod_php.c>
+  php_flag display_errors Off
+  php_value session.cookie_httponly On
+  php_value session.use_strict_mode On
+</IfModule>
