@@ -18,7 +18,7 @@
 </div>
 
 <script>
-(async () => {
+document.addEventListener('DOMContentLoaded', async () => {
   try {
     const s = await api('/api/admin/stats.php');
     const grid = document.getElementById('statsGrid');
@@ -55,5 +55,5 @@
   } catch (e) {
     document.getElementById('statsGrid').innerHTML = `<p class="text-muted">${e.message}</p>`;
   }
-})();
+});
 </script>

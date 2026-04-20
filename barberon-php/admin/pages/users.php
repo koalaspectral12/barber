@@ -115,5 +115,5 @@ async function demoteUser(userId) {
   } catch (e) { toast(e.message, 'error'); }
 }
 
-loadUsers();
+document.addEventListener('DOMContentLoaded', loadUsers);
 </script>

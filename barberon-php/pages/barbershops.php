@@ -39,12 +39,13 @@ try {
 } catch (\Throwable $e) {}
 
 $title = $search ? "Resultados para \"$search\"" : 'Barbearias';
+$base = BASE_URL;
 layout_start($title);
 ?>
 <div class="container section">
   <div class="flex items-center gap-4 mb-4" style="flex-wrap:wrap">
     <h1 style="font-size:1.3rem;font-weight:700"><?= htmlspecialchars($title) ?></h1>
-    <a href="/" class="btn btn-ghost btn-sm">← Início</a>
+    <a href="<?= $base ?>/" class="btn btn-ghost btn-sm">← Início</a>
   </div>
 
   <div class="search-bar mb-4">
@@ -61,7 +62,7 @@ layout_start($title);
   <div class="barbershop-grid">
     <?php foreach ($barbershops as $b): ?>
     <div class="card barbershop-card">
-      <a href="/pages/barbershop.php?id=<?= urlencode($b['id']) ?>">
+      <a href="<?= $base ?>/pages/barbershop.php?id=<?= urlencode($b['id']) ?>">
         <img src="<?= htmlspecialchars($b['imageUrl']) ?>" alt="<?= htmlspecialchars($b['name']) ?>" loading="lazy">
         <div class="card-body">
           <p class="card-title"><?= htmlspecialchars($b['name']) ?></p>

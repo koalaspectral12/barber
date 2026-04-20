@@ -25,7 +25,7 @@
 </div>
 
 <script>
-(async () => {
+document.addEventListener('DOMContentLoaded', async () => {
   try {
     const s = await api('/api/admin/settings.php');
     document.getElementById('cfgAppName').value  = s.appName  || '';
@@ -35,7 +35,7 @@
     document.getElementById('settingsError').textContent = e.message;
     document.getElementById('settingsError').classList.remove('hidden');
   }
-})();
+});
 
 async function saveSettings() {
   const errEl = document.getElementById('settingsError');

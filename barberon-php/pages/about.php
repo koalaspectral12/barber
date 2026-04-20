@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/layout.php';
+$base = BASE_URL;
 layout_start('Sobre nós');
 ?>
 <div class="container section" style="max-width:720px">
@@ -9,6 +10,6 @@ layout_start('Sobre nós');
   <p class="text-muted">O <strong style="color:var(--text)">Barberon</strong> é uma plataforma para agendamento online em barbearias.</p>
   <p class="text-muted mt-4">Encontre a barbearia ideal, conheça os serviços disponíveis e agende um horário de forma rápida e fácil, sem precisar ligar ou enviar mensagem.</p>
   <p class="text-muted mt-4">Para proprietários de barbearias, o Barberon oferece um painel de administração completo para gerenciar serviços, horários de funcionamento e agendamentos.</p>
-  <a href="/" class="btn btn-outline mt-6">← Voltar para o início</a>
+  <a href="<?= $base ?>/" class="btn btn-outline mt-6">← Voltar para o início</a>
 </div>
 <?php layout_end(); ?>

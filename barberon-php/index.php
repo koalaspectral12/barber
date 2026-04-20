@@ -65,7 +65,7 @@ layout_start($appName);
 
   <div class="pills mt-4">
     <?php foreach ($quickSearch as $qs): ?>
-      <a href="/pages/barbershops.php?search=<?= urlencode($qs['search']) ?>" class="pill">
+      <a href="<?= $base ?>/pages/barbershops.php?search=<?= urlencode($qs['search']) ?>" class="pill">
         <span><?= $qs['emoji'] ?></span>
         <span><?= htmlspecialchars($qs['label']) ?></span>
       </a>
@@ -104,7 +104,7 @@ layout_start($appName);
   <div class="barbershop-grid">
     <?php foreach ($barbershops as $b): ?>
     <div class="card barbershop-card">
-      <a href="/pages/barbershop.php?id=<?= urlencode($b['id']) ?>">
+      <a href="<?= $base ?>/pages/barbershop.php?id=<?= urlencode($b['id']) ?>">
         <img src="<?= htmlspecialchars($b['imageUrl']) ?>" alt="<?= htmlspecialchars($b['name']) ?>" loading="lazy">
         <div class="card-body">
           <p class="card-title"><?= htmlspecialchars($b['name']) ?></p>
@@ -128,7 +128,7 @@ layout_start($appName);
   <div class="barbershop-grid">
     <?php foreach ($popularBarbershops as $b): ?>
     <div class="card barbershop-card">
-      <a href="/pages/barbershop.php?id=<?= urlencode($b['id']) ?>">
+      <a href="<?= $base ?>/pages/barbershop.php?id=<?= urlencode($b['id']) ?>">
         <img src="<?= htmlspecialchars($b['imageUrl']) ?>" alt="<?= htmlspecialchars($b['name']) ?>" loading="lazy">
         <div class="card-body">
           <p class="card-title"><?= htmlspecialchars($b['name']) ?></p>
@@ -146,7 +146,7 @@ layout_start($appName);
 
 <script>
 // Load upcoming bookings
-(async () => {
+document.addEventListener('DOMContentLoaded', async () => {
   try {
     const bookings = await api('/api/bookings/index.php');
     const upcoming = bookings.filter(b => new Date(b.date) >= new Date()).slice(0, 3);
@@ -156,7 +156,7 @@ layout_start($appName);
     section.style.display = '';
     list.innerHTML = upcoming.map(b => `
       <div class="booking-item">
-        <img src="${b.service?.barbershop?.imageUrl || '/public/img/placeholder.png'}" alt="">
+        <img src="${b.service?.barbershop?.imageUrl || (_BASE + '/public/img/placeholder.png')}" alt="">
         <div class="info">
           <div class="shop-name">${b.service?.barbershop?.name || ''}</div>
           <div class="svc-name">${b.service?.name || ''}</div>
@@ -165,7 +165,7 @@ layout_start($appName);
       </div>
     `).join('');
   } catch {}
-})();
+});
 </script>
 
 <?php layout_end(); ?>

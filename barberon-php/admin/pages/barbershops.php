@@ -115,5 +115,5 @@ async function deleteShop(id, name) {
   } catch (e) { toast(e.message, 'error'); }
 }
 
-loadShops();
+document.addEventListener('DOMContentLoaded', loadShops);
 </script>

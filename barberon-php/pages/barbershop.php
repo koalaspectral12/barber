@@ -4,17 +4,26 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/layout.php';
 
+$base = BASE_URL;
+
 $id = $_GET['id'] ?? null;
-if (!$id) { header('Location: /'); exit; }
+if (!$id) { header('Location: ' . $base . '/'); exit; }
 
 $shop = DB::fetchOne('SELECT * FROM Barbershop WHERE id = ? LIMIT 1', [$id]);
-if (!$shop) { http_response_code(404); layout_start('Não encontrado'); echo '<div class="container section text-center"><p>Barbearia não encontrada.</p><a href="/" class="btn btn-outline mt-4">Voltar</a></div>'; layout_end(); exit; }
+if (!$shop) {
+    http_response_code(404);
+    layout_start('Não encontrado');
+    echo '<div class="container section text-center"><p>Barbearia não encontrada.</p>'
+       . '<a href="' . $base . '/" class="btn btn-outline mt-4">Voltar</a></div>';
+    layout_end();
+    exit;
+}
 
-$shop['phones']      = json_decode($shop['phones'] ?? '[]', true) ?: [];
-$shop['services']    = DB::fetchAll('SELECT * FROM BarbershopService WHERE barbershopId = ? ORDER BY name', [$id]);
+$shop['phones']   = json_decode($shop['phones'] ?? '[]', true) ?: [];
+$shop['services'] = DB::fetchAll('SELECT * FROM BarbershopService WHERE barbershopId = ? ORDER BY name', [$id]);
 foreach ($shop['services'] as &$s) $s['price'] = (float) $s['price'];
-$shop['hours']       = DB::fetchAll('SELECT * FROM BarbershopHours WHERE barbershopId = ? ORDER BY dayOfWeek', [$id]);
-$shop['payment']     = DB::fetchOne('SELECT active, mpPublicKey FROM PaymentConfig WHERE barbershopId = ? LIMIT 1', [$id]);
+$shop['hours']    = DB::fetchAll('SELECT * FROM BarbershopHours WHERE barbershopId = ? ORDER BY dayOfWeek', [$id]);
+$shop['payment']  = DB::fetchOne('SELECT active, mpPublicKey FROM PaymentConfig WHERE barbershopId = ? LIMIT 1', [$id]);
 
 $days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
@@ -22,7 +31,7 @@ layout_start($shop['name']);
 ?>
 <div class="shop-hero">
   <img src="<?= htmlspecialchars($shop['imageUrl']) ?>" alt="<?= htmlspecialchars($shop['name']) ?>">
-  <a href="/pages/barbershops.php" class="shop-back btn btn-outline btn-sm">← Voltar</a>
+  <a href="<?= $base ?>/pages/barbershops.php" class="shop-back btn btn-outline btn-sm">← Voltar</a>
 </div>
 
 <div class="shop-info">
@@ -82,7 +91,7 @@ layout_start($shop['name']);
 function requireLogin(fn) {
   const user = <?= json_encode(current_user() ? ['id' => current_user()['id']] : null) ?>;
   if (!user) {
-    window.location.href = '/pages/login.php?callbackUrl=' + encodeURIComponent(window.location.href);
+    window.location.href = _BASE + '/pages/login.php?callbackUrl=' + encodeURIComponent(window.location.href);
     return;
   }
   fn();

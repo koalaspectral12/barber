@@ -55,5 +55,5 @@ async function demoteAdmin(userId) {
   } catch (e) { toast(e.message, 'error'); }
 }
 
-loadAdmins();
+document.addEventListener('DOMContentLoaded', loadAdmins);
 </script>

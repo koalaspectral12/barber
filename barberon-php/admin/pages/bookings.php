@@ -73,5 +73,5 @@ async function cancelBooking(id) {
   } catch (e) { toast(e.message, 'error'); }
 }
 
-loadBookings();
+document.addEventListener('DOMContentLoaded', loadBookings);
 </script>

@@ -3,9 +3,10 @@ require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/layout.php';
 
+$base = BASE_URL;
 $user = current_user();
 if (!$user) {
-    header('Location: /pages/login.php?callbackUrl=' . urlencode('/pages/bookings.php'));
+    header('Location: ' . $base . '/pages/login.php?callbackUrl=' . urlencode($base . '/pages/bookings.php'));
     exit;
 }
 layout_start('Meus Agendamentos');
@@ -13,7 +14,7 @@ layout_start('Meus Agendamentos');
 <div class="container section">
   <div class="flex items-center justify-between mb-4">
     <h1 style="font-size:1.3rem;font-weight:700">Meus Agendamentos</h1>
-    <a href="/" class="btn btn-ghost btn-sm">← Início</a>
+    <a href="<?= $base ?>/" class="btn btn-ghost btn-sm">← Início</a>
   </div>
 
   <div id="tabs" class="flex gap-2 mb-4">
@@ -64,7 +65,7 @@ function renderList(bookings, showCancel) {
   if (!bookings.length) return '<p class="text-muted text-center">Nenhum agendamento.</p>';
   return bookings.map(b => `
     <div class="booking-item" id="bk-${b.id}">
-      <img src="${b.service?.barbershop?.imageUrl || b.barbershopImage || '/public/img/placeholder.png'}" alt="">
+      <img src="${b.service?.barbershop?.imageUrl || b.barbershopImage || (_BASE + '/public/img/placeholder.png')}" alt="">
       <div class="info">
         <div class="shop-name">${b.service?.barbershop?.name || b.barbershopName || ''}</div>
         <div class="svc-name">${b.service?.name || b.serviceName || ''}</div>
@@ -88,6 +89,6 @@ async function cancelBooking(id) {
   }
 }
 
-loadBookings();
+document.addEventListener('DOMContentLoaded', loadBookings);
 </script>
 <?php layout_end(); ?>

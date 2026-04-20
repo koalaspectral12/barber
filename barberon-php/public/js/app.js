@@ -1,6 +1,15 @@
 /**
  * Barberon — Main client-side JS
+ * Works at root (/) and in any subfolder (/barberon/, etc.)
+ * window.BASE_URL is injected by PHP layout.php — e.g. '' or '/barberon'
  */
+
+// ── Base URL helper ───────────────────────────────────────────────────────────
+// PHP injects window.BASE_URL before this file loads.
+// Fallback to '' if somehow missing.
+const _BASE = (typeof window !== 'undefined' && window.BASE_URL != null)
+  ? window.BASE_URL
+  : '';
 
 // ── Utilities ──────────────────────────────────────────────────────────────
 
@@ -19,10 +28,17 @@ function toast(msg, type = 'info') {
   setTimeout(() => t.remove(), 3500);
 }
 
-/** Generic fetch wrapper */
+/**
+ * Generic fetch wrapper.
+ * Accepts absolute URLs (https://…) and relative paths (/api/…).
+ * Relative paths are automatically prefixed with BASE_URL.
+ */
 async function api(url, opts = {}) {
-  const res = await fetch(url, {
+  // Prefix relative paths with the app base URL
+  const fullUrl = url.startsWith('http') ? url : _BASE + url;
+  const res = await fetch(fullUrl, {
     headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+    credentials: 'same-origin',
     ...opts,
   });
   let data;
@@ -47,20 +63,9 @@ function fmtPrice(val) {
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
-let _currentUser = null;
-
-async function loadCurrentUser() {
-  try {
-    _currentUser = await api('/api/auth/me.php');
-  } catch {
-    _currentUser = null;
-  }
-  return _currentUser;
-}
-
 async function authLogout() {
   try { await api('/api/auth/logout.php', { method: 'POST' }); } catch {}
-  window.location.href = '/';
+  window.location.href = _BASE + '/';
 }
 
 // ── Mobile menu toggle ────────────────────────────────────────────────────────
@@ -101,8 +106,6 @@ function initCarousel(el) {
   if (total > 1) setInterval(() => goTo(current + 1), 4000);
 }
 
-document.querySelectorAll('.carousel').forEach(initCarousel);
-
 // ── Calendar ──────────────────────────────────────────────────────────────────
 
 function buildCalendar(containerId, onSelect) {
@@ -116,9 +119,10 @@ function buildCalendar(containerId, onSelect) {
   let selected  = null;
 
   function render() {
-    const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const firstDay   = new Date(viewYear, viewMonth, 1).getDay();
-    const daysInMo   = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                        'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+    const daysInMo = new Date(viewYear, viewMonth + 1, 0).getDate();
 
     let html = `<div class="calendar">
       <div class="cal-header">
@@ -130,27 +134,24 @@ function buildCalendar(containerId, onSelect) {
     ['D','S','T','Q','Q','S','S'].forEach(d => { html += `<div class="cal-day-name">${d}</div>`; });
     for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
     for (let d = 1; d <= daysInMo; d++) {
-      const dt = new Date(viewYear, viewMonth, d);
+      const dt  = new Date(viewYear, viewMonth, d);
       const iso = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const isPast    = dt < today;
-      const isTodayDay = dt.getTime() === today.getTime();
-      const isSelected = selected === iso;
-      let cls = 'cal-day';
-      if (isPast)      cls += ' disabled';
-      if (isTodayDay)  cls += ' today';
-      if (isSelected)  cls += ' selected';
+      let cls   = 'cal-day';
+      if (dt < today)                        cls += ' disabled';
+      if (dt.getTime() === today.getTime())  cls += ' today';
+      if (selected === iso)                  cls += ' selected';
       html += `<div class="${cls}" data-date="${iso}">${d}</div>`;
     }
     html += '</div></div>';
     container.innerHTML = html;
-    container.querySelector('#calPrev').addEventListener('click', () => { viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } render(); });
-    container.querySelector('#calNext').addEventListener('click', () => { viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } render(); });
+    container.querySelector('#calPrev').addEventListener('click', () => {
+      viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } render();
+    });
+    container.querySelector('#calNext').addEventListener('click', () => {
+      viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } render();
+    });
     container.querySelectorAll('.cal-day:not(.disabled):not(.empty)').forEach(el => {
-      el.addEventListener('click', () => {
-        selected = el.dataset.date;
-        render();
-        onSelect(selected);
-      });
+      el.addEventListener('click', () => { selected = el.dataset.date; render(); onSelect(selected); });
     });
   }
 
@@ -178,7 +179,6 @@ function openBookingModal(serviceId, serviceName, barbershopId) {
   document.getElementById('modalServiceName').textContent = serviceName;
   document.getElementById('bookingSlots').innerHTML = '<p class="text-muted text-sm">Selecione uma data</p>';
   document.getElementById('bookingConfirmBtn').disabled = true;
-
   modal.classList.add('open');
 
   buildCalendar('bookingCalendar', async (date) => {
@@ -190,8 +190,7 @@ function openBookingModal(serviceId, serviceName, barbershopId) {
 }
 
 function closeBookingModal() {
-  const modal = document.getElementById('bookingModal');
-  if (modal) modal.classList.remove('open');
+  document.getElementById('bookingModal')?.classList.remove('open');
 }
 
 async function loadSlots(date) {
@@ -207,7 +206,7 @@ async function loadSlots(date) {
     const grid = slotEl.querySelector('.slot-grid');
     data.slots.forEach(s => {
       const btn = document.createElement('button');
-      btn.className = 'slot-btn' + (s.available ? '' : '');
+      btn.className = 'slot-btn';
       btn.textContent = s.time;
       btn.disabled = !s.available;
       btn.addEventListener('click', () => {
@@ -228,12 +227,13 @@ async function confirmBooking() {
   const btn = document.getElementById('bookingConfirmBtn');
   btn.disabled = true;
   btn.textContent = 'Agendando...';
-
   try {
-    const dateTime = `${_selectedDate} ${_selectedTime}:00`;
     await api('/api/bookings/index.php', {
       method: 'POST',
-      body: JSON.stringify({ serviceId: _selectedServiceId, date: dateTime }),
+      body: JSON.stringify({
+        serviceId: _selectedServiceId,
+        date: `${_selectedDate} ${_selectedTime}:00`,
+      }),
     });
     closeBookingModal();
     toast('Agendamento realizado com sucesso!', 'success');
@@ -248,7 +248,7 @@ async function confirmBooking() {
 
 function doSearch() {
   const q = document.getElementById('searchInput')?.value.trim();
-  if (q) window.location.href = `/pages/barbershops.php?search=${encodeURIComponent(q)}`;
+  if (q) window.location.href = `${_BASE}/pages/barbershops.php?search=${encodeURIComponent(q)}`;
 }
 
 document.getElementById('searchInput')?.addEventListener('keydown', e => {
@@ -257,6 +257,5 @@ document.getElementById('searchInput')?.addEventListener('keydown', e => {
 
 // ── On page load ──────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // Auto-init carousels
   document.querySelectorAll('.carousel').forEach(initCarousel);
 });

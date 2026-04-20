@@ -3,13 +3,17 @@ Options -Indexes
 Options +FollowSymLinks
 RewriteEngine On
 
-# Redirect barbershop detail
-RewriteRule ^barbershop/([^/]+)/?$  /pages/barbershop.php?id=$1  [QSA,L]
-RewriteRule ^barbearias/?$          /pages/barbershops.php        [QSA,L]
-RewriteRule ^agendamentos/?$        /pages/bookings.php           [QSA,L]
-RewriteRule ^entrar/?$              /pages/login.php              [QSA,L]
+# Correct MIME types
+AddType image/svg+xml .svg
+AddType application/json .json
 
-# Block access to includes
+# Pretty URLs — relative paths work in any subfolder
+RewriteRule ^barbershop/([^/]+)/?$  pages/barbershop.php?id=$1  [QSA,L]
+RewriteRule ^barbearias/?$          pages/barbershops.php        [QSA,L]
+RewriteRule ^agendamentos/?$        pages/bookings.php           [QSA,L]
+RewriteRule ^entrar/?$              pages/login.php              [QSA,L]
+
+# Block direct access to includes/
 RewriteRule ^includes/  - [F,L]
 
 # Security headers

@@ -3,19 +3,20 @@ require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/layout.php';
 
+$base = BASE_URL;
 $user = current_user();
 if ($user) {
-    header('Location: /');
+    header('Location: ' . $base . '/');
     exit;
 }
 
-$callbackUrl = $_GET['callbackUrl'] ?? '/';
+$callbackUrl = $_GET['callbackUrl'] ?? $base . '/';
 layout_start('Entrar');
 ?>
 <div class="auth-wrapper">
   <div class="auth-card">
     <div class="auth-logo">
-      <img src="/public/img/logo.png" alt="Barberon" width="32" height="32">
+      <img src="<?= $base ?>/public/img/logo.svg" alt="Barberon" width="32" height="32">
       <span>Barberon</span>
     </div>
     <p class="text-center text-muted text-sm mb-4">Agende nos melhores barbeiros da sua cidade</p>

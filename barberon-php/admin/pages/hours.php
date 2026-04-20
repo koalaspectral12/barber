@@ -23,11 +23,11 @@ let _hours = {};
 let _selectedShopId = null;
 
 <?php if ($ctx['role'] === 'SUPERADMIN'): ?>
-(async () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const shops = await api('/api/admin/barbershops.php').catch(() => []);
   const sel = document.getElementById('hoursShopSelect');
   shops.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.textContent = s.name; sel.appendChild(o); });
-})();
+});
 <?php else: ?>
 document.addEventListener('DOMContentLoaded', loadHours);
 <?php endif; ?>

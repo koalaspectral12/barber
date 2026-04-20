@@ -124,5 +124,5 @@ async function deleteSvc(id, name) {
   } catch (e) { toast(e.message, 'error'); }
 }
 
-loadSvcs();
+document.addEventListener('DOMContentLoaded', loadSvcs);
 </script>
