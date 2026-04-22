@@ -4,16 +4,49 @@
  * window.BASE_URL is injected by PHP layout.php — e.g. '' or '/barberon'
  */
 
-// ── Base URL helper ───────────────────────────────────────────────────────────
-// PHP injects window.BASE_URL before this file loads.
-// Fallback to '' if somehow missing.
+// ── Base URL ──────────────────────────────────────────────────────────────────
 const _BASE = (typeof window !== 'undefined' && window.BASE_URL != null)
-  ? window.BASE_URL
-  : '';
+  ? window.BASE_URL : '';
 
-// ── Utilities ──────────────────────────────────────────────────────────────
+// ── Fetch wrapper ─────────────────────────────────────────────────────────────
+async function api(url, opts = {}) {
+  const fullUrl = url.startsWith('http') ? url : _BASE + url;
+  const res = await fetch(fullUrl, {
+    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+    credentials: 'same-origin',
+    ...opts,
+  });
+  let data;
+  try { data = await res.json(); } catch { data = {}; }
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
 
-/** Show a toast notification */
+// ── Formatters ────────────────────────────────────────────────────────────────
+function fmtDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('pt-BR', {
+    day: '2-digit', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+function fmtDateShort(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+function fmtPrice(val) {
+  return 'R$ ' + Number(val).toFixed(2).replace('.', ',');
+}
+function fmtDuration(hhmm) {
+  if (!hhmm) return '30 min';
+  const [h, m] = hhmm.split(':').map(Number);
+  if (h === 0) return m + ' min';
+  if (m === 0) return h + 'h';
+  return h + 'h ' + m + 'min';
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
 function toast(msg, type = 'info') {
   const c = document.getElementById('toastContainer') || (() => {
     const d = document.createElement('div');
@@ -28,55 +61,18 @@ function toast(msg, type = 'info') {
   setTimeout(() => t.remove(), 3500);
 }
 
-/**
- * Generic fetch wrapper.
- * Accepts absolute URLs (https://…) and relative paths (/api/…).
- * Relative paths are automatically prefixed with BASE_URL.
- */
-async function api(url, opts = {}) {
-  // Prefix relative paths with the app base URL
-  const fullUrl = url.startsWith('http') ? url : _BASE + url;
-  const res = await fetch(fullUrl, {
-    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
-    credentials: 'same-origin',
-    ...opts,
-  });
-  let data;
-  try { data = await res.json(); } catch { data = {}; }
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-  return data;
-}
-
-/** Format date to pt-BR */
-function fmtDate(iso) {
-  if (!iso) return '';
-  return new Date(iso).toLocaleDateString('pt-BR', {
-    day: '2-digit', month: 'long', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
-
-/** Format price (BRL) */
-function fmtPrice(val) {
-  return 'R$ ' + Number(val).toFixed(2).replace('.', ',');
-}
-
 // ── Auth helpers ──────────────────────────────────────────────────────────────
-
 async function authLogout() {
   try { await api('/api/auth/logout.php', { method: 'POST' }); } catch {}
   window.location.href = _BASE + '/';
 }
 
-// ── Mobile menu toggle ────────────────────────────────────────────────────────
-
+// ── Mobile menu ───────────────────────────────────────────────────────────────
 function toggleMenu() {
-  const m = document.getElementById('mobileMenu');
-  if (m) m.classList.toggle('open');
+  document.getElementById('mobileMenu')?.classList.toggle('open');
 }
 
 // ── Banner Carousel ───────────────────────────────────────────────────────────
-
 function initCarousel(el) {
   const track  = el.querySelector('.carousel-track');
   const slides = el.querySelectorAll('.carousel-slide');
@@ -102,13 +98,11 @@ function initCarousel(el) {
 
   el.querySelector('.carousel-btn.prev')?.addEventListener('click', () => goTo(current - 1));
   el.querySelector('.carousel-btn.next')?.addEventListener('click', () => goTo(current + 1));
-
   if (total > 1) setInterval(() => goTo(current + 1), 4000);
 }
 
 // ── Calendar ──────────────────────────────────────────────────────────────────
-
-function buildCalendar(containerId, onSelect) {
+function buildCalendar(containerId, onSelect, selectedDate = null) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
@@ -116,13 +110,13 @@ function buildCalendar(containerId, onSelect) {
   today.setHours(0, 0, 0, 0);
   let viewYear  = today.getFullYear();
   let viewMonth = today.getMonth();
-  let selected  = null;
+  let selected  = selectedDate;
 
   function render() {
     const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                         'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const firstDay = new Date(viewYear, viewMonth, 1).getDay();
-    const daysInMo = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const firstDay  = new Date(viewYear, viewMonth, 1).getDay();
+    const daysInMo  = new Date(viewYear, viewMonth + 1, 0).getDate();
 
     let html = `<div class="calendar">
       <div class="cal-header">
@@ -131,131 +125,219 @@ function buildCalendar(containerId, onSelect) {
         <button class="btn btn-ghost btn-sm" id="calNext">›</button>
       </div>
       <div class="cal-grid">`;
-    ['D','S','T','Q','Q','S','S'].forEach(d => { html += `<div class="cal-day-name">${d}</div>`; });
+
+    ['D','S','T','Q','Q','S','S'].forEach(d => {
+      html += `<div class="cal-day-name">${d}</div>`;
+    });
     for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
     for (let d = 1; d <= daysInMo; d++) {
       const dt  = new Date(viewYear, viewMonth, d);
       const iso = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      let cls   = 'cal-day';
-      if (dt < today)                        cls += ' disabled';
-      if (dt.getTime() === today.getTime())  cls += ' today';
-      if (selected === iso)                  cls += ' selected';
+      let cls = 'cal-day';
+      if (dt < today)                       cls += ' disabled';
+      if (dt.getTime() === today.getTime()) cls += ' today';
+      if (selected === iso)                 cls += ' selected';
       html += `<div class="${cls}" data-date="${iso}">${d}</div>`;
     }
     html += '</div></div>';
     container.innerHTML = html;
+
     container.querySelector('#calPrev').addEventListener('click', () => {
-      viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } render();
+      viewMonth--;
+      if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+      render();
     });
     container.querySelector('#calNext').addEventListener('click', () => {
-      viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } render();
+      viewMonth++;
+      if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+      render();
     });
     container.querySelectorAll('.cal-day:not(.disabled):not(.empty)').forEach(el => {
-      el.addEventListener('click', () => { selected = el.dataset.date; render(); onSelect(selected); });
+      el.addEventListener('click', () => {
+        selected = el.dataset.date;
+        render();
+        onSelect(selected);
+      });
     });
   }
 
   render();
 }
 
-// ── Booking flow ──────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// BOOKING FLOW
+// ══════════════════════════════════════════════════════════════════════════════
 
-let _selectedServiceId   = null;
-let _selectedServiceName = null;
-let _selectedDate        = null;
-let _selectedTime        = null;
-let _barbershopId        = null;
+let _bk = {
+  serviceId:   null,
+  serviceName: null,
+  duration:    '00:30',
+  price:       0,
+  barbershopId: null,
+  date:        null,
+  time:        null,
+};
 
-function openBookingModal(serviceId, serviceName, barbershopId) {
-  _selectedServiceId   = serviceId;
-  _selectedServiceName = serviceName;
-  _barbershopId        = barbershopId;
-  _selectedDate        = null;
-  _selectedTime        = null;
+/** Open modal — called from barbershop page per service */
+function openBookingModal(serviceId, serviceName, barbershopId, duration, price) {
+  _bk.serviceId    = serviceId;
+  _bk.serviceName  = serviceName;
+  _bk.barbershopId = barbershopId;
+  _bk.duration     = duration || '00:30';
+  _bk.price        = price    || 0;
+  _bk.date         = null;
+  _bk.time         = null;
 
-  const modal = document.getElementById('bookingModal');
-  if (!modal) return;
-
+  // Header
   document.getElementById('modalServiceName').textContent = serviceName;
-  document.getElementById('bookingSlots').innerHTML = '<p class="text-muted text-sm">Selecione uma data</p>';
-  document.getElementById('bookingConfirmBtn').disabled = true;
-  modal.classList.add('open');
+  document.getElementById('modalServiceMeta').textContent =
+    fmtDuration(_bk.duration) + ' · ' + fmtPrice(_bk.price);
 
+  // Show step 1
+  _bkShowStep(1);
+
+  // Build calendar (step 1)
   buildCalendar('bookingCalendar', async (date) => {
-    _selectedDate = date;
-    _selectedTime = null;
-    document.getElementById('bookingConfirmBtn').disabled = true;
-    await loadSlots(date);
+    _bk.date = date;
+    _bk.time = null;
+    _bkShowStep(2);
+    document.getElementById('bkSelectedDate').textContent = fmtDateShort(date + 'T12:00:00');
+    await _bkLoadSlots(date);
   });
+
+  // Open modal
+  document.getElementById('bookingModal').classList.add('open');
 }
 
 function closeBookingModal() {
   document.getElementById('bookingModal')?.classList.remove('open');
 }
 
-async function loadSlots(date) {
+function handleModalBackdropClick(e) {
+  if (e.target === document.getElementById('bookingModal')) closeBookingModal();
+}
+
+function _bkShowStep(n) {
+  [1, 2, 3].forEach(i => {
+    document.getElementById('bkStep' + i)?.classList.toggle('hidden', i !== n);
+  });
+}
+
+function bkBackToDate() {
+  _bk.time = null;
+  _bkShowStep(1);
+}
+
+function bkBackToSlots() {
+  _bkShowStep(2);
+}
+
+async function _bkLoadSlots(date) {
   const slotEl = document.getElementById('bookingSlots');
-  slotEl.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0.5rem auto"></div>';
+  slotEl.innerHTML = '<div class="spinner" style="width:24px;height:24px;border-width:2px;margin:1rem auto"></div>';
+
   try {
-    const data = await api(`/api/barbershops/hours.php?barbershopId=${_barbershopId}&date=${date}`);
-    if (!data.slots || !data.slots.length) {
-      slotEl.innerHTML = '<p class="text-muted text-sm">Nenhum horário disponível neste dia</p>';
+    const data = await api(
+      `/api/barbershops/hours.php?barbershopId=${_bk.barbershopId}&date=${date}&serviceId=${_bk.serviceId}`
+    );
+
+    if (!data.slots || data.slots.length === 0) {
+      slotEl.innerHTML = `<div class="empty-slots">
+        <p class="text-muted text-sm text-center">${data.message || 'Nenhum horário disponível neste dia'}</p>
+      </div>`;
       return;
     }
+
+    const hasAvailable = data.slots.some(s => s.available);
+    if (!hasAvailable) {
+      slotEl.innerHTML = `<div class="empty-slots">
+        <p class="text-muted text-sm text-center">Todos os horários deste dia estão ocupados.<br>Escolha outra data.</p>
+      </div>`;
+      return;
+    }
+
     slotEl.innerHTML = '<div class="slot-grid"></div>';
     const grid = slotEl.querySelector('.slot-grid');
+
     data.slots.forEach(s => {
       const btn = document.createElement('button');
-      btn.className = 'slot-btn';
+      btn.className = 'slot-btn' + (s.available ? '' : ' booked');
       btn.textContent = s.time;
       btn.disabled = !s.available;
+      if (!s.available) btn.title = 'Horário ocupado';
+
       btn.addEventListener('click', () => {
         grid.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
-        _selectedTime = s.time;
-        document.getElementById('bookingConfirmBtn').disabled = false;
+        _bk.time = s.time;
+        _bkFillSummary();
+        _bkShowStep(3);
       });
       grid.appendChild(btn);
     });
+
   } catch (e) {
-    slotEl.innerHTML = `<p class="text-muted text-sm">${e.message}</p>`;
+    slotEl.innerHTML = `<p class="text-muted text-sm text-center">${e.message}</p>`;
   }
 }
 
-async function confirmBooking() {
-  if (!_selectedDate || !_selectedTime) return;
+function _bkFillSummary() {
+  const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const [y, m, d] = (_bk.date || '').split('-');
+  const dateStr = d ? `${d} de ${months[parseInt(m)-1]} de ${y}` : _bk.date;
+
+  document.getElementById('bkSumService').textContent  = _bk.serviceName;
+  document.getElementById('bkSumDate').textContent     = dateStr;
+  document.getElementById('bkSumTime').textContent     = _bk.time;
+  document.getElementById('bkSumDuration').textContent = fmtDuration(_bk.duration);
+  document.getElementById('bkSumPrice').textContent    = fmtPrice(_bk.price);
+
+  const errEl = document.getElementById('bkConfirmError');
+  if (errEl) errEl.classList.add('hidden');
   const btn = document.getElementById('bookingConfirmBtn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Confirmar agendamento'; }
+}
+
+async function confirmBooking() {
+  if (!_bk.date || !_bk.time) return;
+
+  const btn    = document.getElementById('bookingConfirmBtn');
+  const errEl  = document.getElementById('bkConfirmError');
   btn.disabled = true;
-  btn.textContent = 'Agendando...';
+  btn.textContent = 'Agendando…';
+  if (errEl) errEl.classList.add('hidden');
+
   try {
     await api('/api/bookings/index.php', {
       method: 'POST',
       body: JSON.stringify({
-        serviceId: _selectedServiceId,
-        date: `${_selectedDate} ${_selectedTime}:00`,
+        serviceId: _bk.serviceId,
+        date: `${_bk.date} ${_bk.time}:00`,
       }),
     });
     closeBookingModal();
-    toast('Agendamento realizado com sucesso!', 'success');
+    toast('✅ Agendamento realizado com sucesso!', 'success');
   } catch (e) {
-    toast(e.message, 'error');
+    if (errEl) {
+      errEl.textContent = e.message;
+      errEl.classList.remove('hidden');
+    } else {
+      toast(e.message, 'error');
+    }
     btn.disabled = false;
-    btn.textContent = 'Confirmar';
+    btn.textContent = 'Confirmar agendamento';
   }
 }
 
 // ── Quick search ──────────────────────────────────────────────────────────────
-
 function doSearch() {
   const q = document.getElementById('searchInput')?.value.trim();
   if (q) window.location.href = `${_BASE}/pages/barbershops.php?search=${encodeURIComponent(q)}`;
 }
 
-document.getElementById('searchInput')?.addEventListener('keydown', e => {
-  if (e.key === 'Enter') doSearch();
-});
-
-// ── On page load ──────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('searchInput')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
   document.querySelectorAll('.carousel').forEach(initCarousel);
 });

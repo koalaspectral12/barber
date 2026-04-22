@@ -225,7 +225,21 @@ button { cursor: pointer; font-family: inherit; }
 .service-card .price { font-weight: 700; color: var(--primary); margin-top: 0.35rem; font-size: 0.9rem; }
 .service-card .book-btn { margin-left: auto; flex-shrink: 0; }
 
-/* ── Booking modal ───────────────────────────────────────────── */
+/* ── Booking modal — see .modal-backdrop in Time slot section ── */
+
+/* ── Time slot picker ────────────────────────────────────────── */
+.slot-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 0.25rem; }
+.slot-btn {
+  padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--bg); color: var(--text); font-size: 0.8rem; text-align: center;
+  cursor: pointer; transition: background .15s, border-color .15s;
+}
+.slot-btn:hover:not(:disabled) { border-color: var(--primary); background: var(--bg-hover); }
+.slot-btn.selected { background: var(--primary); color: #000; border-color: var(--primary); }
+.slot-btn:disabled, .slot-btn.booked { opacity: .4; cursor: not-allowed; background: var(--bg); }
+.empty-slots { padding: 1.5rem 0; }
+
+/* ── Modal steps ─────────────────────────────────────────────── */
 .modal-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,.7);
   display: flex; align-items: flex-end; justify-content: center;
@@ -234,23 +248,27 @@ button { cursor: pointer; font-family: inherit; }
 .modal-backdrop.open { opacity: 1; pointer-events: all; }
 .modal {
   background: var(--bg-card); border-radius: var(--radius) var(--radius) 0 0;
-  padding: 1.5rem 1rem 2rem; width: 100%; max-width: 480px;
+  padding: 1.25rem 1rem 2rem; width: 100%; max-width: 480px;
+  max-height: 90vh; overflow-y: auto;
   transform: translateY(100%); transition: transform .3s;
 }
 .modal-backdrop.open .modal { transform: translateY(0); }
-.modal-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
-.modal-close { float: right; background: none; border: none; color: var(--text-muted); font-size: 1.2rem; }
+.modal-title { font-size: 1rem; font-weight: 600; margin-bottom: 0; }
+.modal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.25rem; }
+.modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 0; margin-left: 0.5rem; flex-shrink: 0; }
 
-/* ── Time slot picker ────────────────────────────────────────── */
-.slot-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
-.slot-btn {
-  padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius);
-  background: var(--bg); color: var(--text); font-size: 0.8rem; text-align: center;
-  cursor: pointer; transition: background .15s, border-color .15s;
+/* ── Booking summary card ────────────────────────────────────── */
+.bk-summary {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; margin-bottom: 0.5rem;
 }
-.slot-btn:hover:not(:disabled) { border-color: var(--primary); }
-.slot-btn.selected { background: var(--primary); color: #000; border-color: var(--primary); }
-.slot-btn:disabled { opacity: .4; cursor: not-allowed; }
+.bk-summary-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.6rem 0.85rem; font-size: 0.875rem;
+  border-bottom: 1px solid var(--border);
+}
+.bk-summary-row:last-child { border-bottom: none; }
+.bk-summary-row span { color: var(--text-muted); }
 
 /* ── Calendar ────────────────────────────────────────────────── */
 .calendar { user-select: none; }

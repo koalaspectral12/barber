@@ -115,11 +115,15 @@ CREATE TABLE IF NOT EXISTS `BarbershopService` (
     `description`  TEXT         NOT NULL,
     `imageUrl`     TEXT         NOT NULL,
     `price`        DECIMAL(10,2) NOT NULL,
+    `duration`     VARCHAR(5)   NOT NULL DEFAULT '00:30',
     `barbershopId` VARCHAR(191) NOT NULL,
     PRIMARY KEY (`id`),
     KEY `BarbershopService_barbershopId_fkey` (`barbershopId`),
     CONSTRAINT `BarbershopService_barbershopId_fkey` FOREIGN KEY (`barbershopId`) REFERENCES `Barbershop`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Add duration to existing tables (safe, ignored if already exists)
+ALTER TABLE `BarbershopService` ADD COLUMN IF NOT EXISTS `duration` VARCHAR(5) NOT NULL DEFAULT '00:30';
 
 -- ── Booking ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS `Booking` (
@@ -175,6 +179,23 @@ CREATE TABLE IF NOT EXISTS `BarbershopHours` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `BarbershopHours_barbershopId_dayOfWeek_key` (`barbershopId`, `dayOfWeek`),
     CONSTRAINT `BarbershopHours_barbershopId_fkey` FOREIGN KEY (`barbershopId`) REFERENCES `Barbershop`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── WaitlistNotify ────────────────────────────────────────────
+-- Admin can flag a booking slot as "notify next client" when it opens up
+CREATE TABLE IF NOT EXISTS `WaitlistNotify` (
+    `id`           VARCHAR(191) NOT NULL,
+    `barbershopId` VARCHAR(191) NOT NULL,
+    `serviceId`    VARCHAR(191) NOT NULL,
+    `date`         DATETIME(3)  NOT NULL,
+    `message`      TEXT         DEFAULT NULL,
+    `sentAt`       DATETIME(3)  DEFAULT NULL,
+    `createdAt`    DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (`id`),
+    KEY `WaitlistNotify_barbershopId_fkey` (`barbershopId`),
+    KEY `WaitlistNotify_serviceId_fkey`    (`serviceId`),
+    CONSTRAINT `WaitlistNotify_barbershopId_fkey` FOREIGN KEY (`barbershopId`) REFERENCES `Barbershop`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `WaitlistNotify_serviceId_fkey`    FOREIGN KEY (`serviceId`)    REFERENCES `BarbershopService`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ── Default admin seed (password: admin123) ───────────────────
