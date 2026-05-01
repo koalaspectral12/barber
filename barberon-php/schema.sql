@@ -198,8 +198,108 @@ CREATE TABLE IF NOT EXISTS `WaitlistNotify` (
     CONSTRAINT `WaitlistNotify_serviceId_fkey`    FOREIGN KEY (`serviceId`)    REFERENCES `BarbershopService`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ── Default admin seed (password: admin123) ───────────────────
+-- ── Plan ──────────────────────────────────────────────────────
+-- Superadmin defines plan tiers available for barbershops
+CREATE TABLE IF NOT EXISTS `Plan` (
+    `id`          VARCHAR(191) NOT NULL,
+    `name`        VARCHAR(191) NOT NULL,          -- e.g. 'Mensal', 'Trimestral', 'Anual'
+    `period`      ENUM('monthly','quarterly','yearly') NOT NULL DEFAULT 'monthly',
+    `price`       DECIMAL(10,2) NOT NULL,
+    `description` TEXT         DEFAULT NULL,
+    `features`    TEXT         NOT NULL DEFAULT '[]', -- JSON array of feature strings
+    `maxServices` INT          NOT NULL DEFAULT 10,
+    `customPage`  TINYINT(1)   NOT NULL DEFAULT 0,    -- allows page builder
+    `exclusiveApp`TINYINT(1)   NOT NULL DEFAULT 0,    -- standalone app mode
+    `active`      TINYINT(1)   NOT NULL DEFAULT 1,
+    `createdAt`   DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt`   DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── BarbershopPlan ────────────────────────────────────────────
+-- Which plan a barbershop has subscribed to
+CREATE TABLE IF NOT EXISTS `BarbershopPlan` (
+    `id`           VARCHAR(191) NOT NULL,
+    `barbershopId` VARCHAR(191) NOT NULL,
+    `planId`       VARCHAR(191) NOT NULL,
+    `status`       ENUM('active','expired','cancelled','pending') NOT NULL DEFAULT 'pending',
+    `startDate`    DATETIME(3)  NOT NULL,
+    `endDate`      DATETIME(3)  NOT NULL,
+    `autoRenew`    TINYINT(1)   NOT NULL DEFAULT 0,
+    `createdAt`    DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt`    DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (`id`),
+    KEY `BarbershopPlan_barbershopId_fkey` (`barbershopId`),
+    KEY `BarbershopPlan_planId_fkey`       (`planId`),
+    CONSTRAINT `BarbershopPlan_barbershopId_fkey` FOREIGN KEY (`barbershopId`) REFERENCES `Barbershop`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `BarbershopPlan_planId_fkey`       FOREIGN KEY (`planId`)       REFERENCES `Plan`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── PlanPayment ───────────────────────────────────────────────
+-- Payment transaction for a plan subscription
+CREATE TABLE IF NOT EXISTS `PlanPayment` (
+    `id`             VARCHAR(191) NOT NULL,
+    `barbershopPlanId` VARCHAR(191) NOT NULL,
+    `barbershopId`   VARCHAR(191) NOT NULL,
+    `planId`         VARCHAR(191) NOT NULL,
+    `amount`         DECIMAL(10,2) NOT NULL,
+    `status`         ENUM('pending','approved','rejected','cancelled') NOT NULL DEFAULT 'pending',
+    `mpPaymentId`    VARCHAR(191) DEFAULT NULL,
+    `mpPreferenceId` VARCHAR(255) DEFAULT NULL,
+    `checkoutUrl`    TEXT         DEFAULT NULL,
+    `paidAt`         DATETIME(3)  DEFAULT NULL,
+    `createdAt`      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt`      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (`id`),
+    KEY `PlanPayment_barbershopPlanId_fkey` (`barbershopPlanId`),
+    KEY `PlanPayment_barbershopId_fkey`     (`barbershopId`),
+    CONSTRAINT `PlanPayment_barbershopPlanId_fkey` FOREIGN KEY (`barbershopPlanId`) REFERENCES `BarbershopPlan`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `PlanPayment_barbershopId_fkey`     FOREIGN KEY (`barbershopId`)     REFERENCES `Barbershop`(`id`)  ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── BarberPageConfig ──────────────────────────────────────────
+-- Custom page builder configuration per barbershop
+CREATE TABLE IF NOT EXISTS `BarberPageConfig` (
+    `id`             VARCHAR(191) NOT NULL,
+    `barbershopId`   VARCHAR(191) NOT NULL,
+    `primaryColor`   VARCHAR(20)  NOT NULL DEFAULT '#f59e0b',
+    `accentColor`    VARCHAR(20)  NOT NULL DEFAULT '#1a1a1a',
+    `bgColor`        VARCHAR(20)  NOT NULL DEFAULT '#0f0f0f',
+    `fontFamily`     VARCHAR(100) NOT NULL DEFAULT 'Inter',
+    `heroTitle`      VARCHAR(255) DEFAULT NULL,
+    `heroSubtitle`   VARCHAR(500) DEFAULT NULL,
+    `heroImageUrl`   TEXT         DEFAULT NULL,
+    `carouselImages` TEXT         NOT NULL DEFAULT '[]',  -- JSON array of image URLs
+    `modules`        TEXT         NOT NULL DEFAULT '[]',  -- JSON array of enabled modules
+    `customCss`      TEXT         DEFAULT NULL,
+    `whatsappNumber` VARCHAR(30)  DEFAULT NULL,
+    `instagramUrl`   TEXT         DEFAULT NULL,
+    `appMode`        TINYINT(1)   NOT NULL DEFAULT 0,     -- exclusive app mode (hides Barberon branding)
+    `appName`        VARCHAR(191) DEFAULT NULL,           -- custom name for exclusive app
+    `appLogoUrl`     TEXT         DEFAULT NULL,
+    `appIconUrl`     TEXT         DEFAULT NULL,
+    `createdAt`      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt`      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `BarberPageConfig_barbershopId_key` (`barbershopId`),
+    CONSTRAINT `BarberPageConfig_barbershopId_fkey` FOREIGN KEY (`barbershopId`) REFERENCES `Barbershop`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── Default plans seed ────────────────────────────────────────
+INSERT IGNORE INTO `Plan` (id, name, period, price, description, features, maxServices, customPage, exclusiveApp, active, createdAt, updatedAt) VALUES
+('plan_monthly',   'Mensal',     'monthly',   89.90,  'Plano básico com renovação mensal',     '["Agendamentos ilimitados","Painel admin completo","Horários personalizados","Suporte por e-mail"]',                                        20, 0, 0, 1, NOW(), NOW()),
+('plan_quarterly', 'Trimestral', 'quarterly', 239.90, 'Plano intermediário — economize 11%',   '["Agendamentos ilimitados","Painel admin completo","Horários personalizados","Página personalizada","Carrossel de imagens","Suporte prioritário"]', 50, 1, 0, 1, NOW(), NOW()),
+('plan_yearly',    'Anual',      'yearly',    799.90, 'Plano completo — economize 26%',        '["Agendamentos ilimitados","Painel admin completo","Horários personalizados","Página personalizada","App exclusivo","Domínio próprio","Suporte VIP"]', 999, 1, 1, 1, NOW(), NOW());
+
+-- ── Default admin seed ────────────────────────────────────────
 INSERT IGNORE INTO `AppSettings` (id, appName, banners, updatedAt)
 VALUES ('singleton', 'Barberon', '[]', NOW());
+
+-- ── MP Access Token for platform plans (superadmin) ───────────
+-- Store your Mercado Pago credentials for platform-level plan sales
+-- in AppSettings (extended columns added below)
+ALTER TABLE `AppSettings` ADD COLUMN IF NOT EXISTS `mpAccessToken` TEXT DEFAULT NULL;
+ALTER TABLE `AppSettings` ADD COLUMN IF NOT EXISTS `mpPublicKey`   TEXT DEFAULT NULL;
+ALTER TABLE `AppSettings` ADD COLUMN IF NOT EXISTS `contactEmail`  VARCHAR(255) DEFAULT NULL;
 
 SET FOREIGN_KEY_CHECKS = 1;

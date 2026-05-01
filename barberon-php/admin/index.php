@@ -67,6 +67,8 @@ function is_page(string $p): string {
       <?= admin_nav_item('📅', 'Agendamentos', 'bookings') ?>
       <?= admin_nav_item('🕐', 'Horários',     'hours') ?>
       <?= admin_nav_item('💳', 'Pagamento',    'payment') ?>
+      <?= admin_nav_item('📦', 'Meu Plano',    'plans') ?>
+      <?= admin_nav_item('🎨', 'Minha Página', 'page-builder') ?>
       <?php if ($isSuperAdmin): ?>
         <?= admin_nav_item('👥', 'Admins',      'admins') ?>
         <?= admin_nav_item('👤', 'Clientes',    'users') ?>
@@ -86,17 +88,19 @@ function is_page(string $p): string {
 
   <!-- Mobile nav tabs -->
   <div class="admin-mobile-nav">
-    <a href="<?= $base ?>/admin/?page=dashboard" class="<?= is_page('dashboard') ?>">📊 Dashboard</a>
+    <a href="<?= $base ?>/admin/?page=dashboard"    class="<?= is_page('dashboard')    ?>">📊 Dashboard</a>
     <?php if ($isSuperAdmin): ?>
-    <a href="<?= $base ?>/admin/?page=barbershops" class="<?= is_page('barbershops') ?>">🏪 Barbearias</a>
+    <a href="<?= $base ?>/admin/?page=barbershops"  class="<?= is_page('barbershops')  ?>">🏪 Barbearias</a>
     <?php endif; ?>
-    <a href="<?= $base ?>/admin/?page=services"  class="<?= is_page('services')  ?>">💈 Serviços</a>
-    <a href="<?= $base ?>/admin/?page=bookings"  class="<?= is_page('bookings')  ?>">📅 Agenda</a>
-    <a href="<?= $base ?>/admin/?page=hours"     class="<?= is_page('hours')     ?>">🕐 Horários</a>
+    <a href="<?= $base ?>/admin/?page=services"     class="<?= is_page('services')     ?>">💈 Serviços</a>
+    <a href="<?= $base ?>/admin/?page=bookings"     class="<?= is_page('bookings')     ?>">📅 Agenda</a>
+    <a href="<?= $base ?>/admin/?page=hours"        class="<?= is_page('hours')        ?>">🕐 Horários</a>
+    <a href="<?= $base ?>/admin/?page=plans"        class="<?= is_page('plans')        ?>">📦 Plano</a>
+    <a href="<?= $base ?>/admin/?page=page-builder" class="<?= is_page('page-builder') ?>">🎨 Página</a>
     <?php if ($isSuperAdmin): ?>
-    <a href="<?= $base ?>/admin/?page=admins"    class="<?= is_page('admins')    ?>">👥 Admins</a>
-    <a href="<?= $base ?>/admin/?page=users"     class="<?= is_page('users')     ?>">👤 Clientes</a>
-    <a href="<?= $base ?>/admin/?page=settings"  class="<?= is_page('settings')  ?>">⚙️ Config</a>
+    <a href="<?= $base ?>/admin/?page=admins"       class="<?= is_page('admins')       ?>">👥 Admins</a>
+    <a href="<?= $base ?>/admin/?page=users"        class="<?= is_page('users')        ?>">👤 Clientes</a>
+    <a href="<?= $base ?>/admin/?page=settings"     class="<?= is_page('settings')     ?>">⚙️ Config</a>
     <?php endif; ?>
   </div>
 
@@ -104,12 +108,14 @@ function is_page(string $p): string {
   <main class="admin-main">
     <?php
     $page = $_GET['page'] ?? 'dashboard';
-    $allowed        = ['dashboard','barbershops','services','bookings','hours','payment','admins','users','settings'];
+    $allowed        = ['dashboard','barbershops','services','bookings','hours','payment','admins','users','settings','plans','page-builder'];
     $superAdminOnly = ['barbershops','admins','users','settings'];
     if (!in_array($page, $allowed)) $page = 'dashboard';
     if (in_array($page, $superAdminOnly) && !$isSuperAdmin) $page = 'dashboard';
 
-    include __DIR__ . "/pages/{$page}.php";
+    // page-builder filename uses hyphen — map to file
+    $pageFile = $page === 'page-builder' ? 'page-builder' : $page;
+    include __DIR__ . "/pages/{$pageFile}.php";
     ?>
   </main>
 

@@ -33,9 +33,9 @@ if ($method === 'GET') {
 if ($method === 'PUT') {
     if ($ctx['role'] !== 'SUPERADMIN') json_error('Acesso restrito ao Superadmin', 403);
 
-    $body    = request_body();
-    $fields  = [];
-    $vals    = [];
+    $body   = request_body();
+    $fields = [];
+    $vals   = [];
 
     if (array_key_exists('appName', $body)) {
         $fields[] = 'appName = ?'; $vals[] = $body['appName'];
@@ -45,7 +45,16 @@ if ($method === 'PUT') {
     }
     if (array_key_exists('banners', $body)) {
         $fields[] = 'banners = ?';
-        $vals[] = json_encode(is_array($body['banners']) ? $body['banners'] : []);
+        $vals[]   = json_encode(is_array($body['banners']) ? $body['banners'] : []);
+    }
+    if (array_key_exists('mpAccessToken', $body)) {
+        $fields[] = 'mpAccessToken = ?'; $vals[] = $body['mpAccessToken'] ?: null;
+    }
+    if (array_key_exists('mpPublicKey', $body)) {
+        $fields[] = 'mpPublicKey = ?'; $vals[] = $body['mpPublicKey'] ?: null;
+    }
+    if (array_key_exists('contactEmail', $body)) {
+        $fields[] = 'contactEmail = ?'; $vals[] = $body['contactEmail'] ?: null;
     }
 
     $fields[] = 'updatedAt = ?';

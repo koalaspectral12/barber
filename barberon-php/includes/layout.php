@@ -34,6 +34,7 @@ function layout_start(string $title = 'Barberon', string $extraCss = ''): void {
       <span>Barberon</span>
     </a>
     <nav class="header-nav">
+      <a href="<?= $base ?>/pages/pricing.php" class="btn btn-sm btn-ghost">Planos</a>
       <?php if ($user): ?>
         <span class="header-user"><?= htmlspecialchars($user['name'] ?? $user['email']) ?></span>
         <?php if ($isAdmin): ?>
