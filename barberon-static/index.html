@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barberon — Agende seu corte</title>
+  <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand">
+      <img src="img/logo.svg" alt="Barberon" width="28" height="28">
+      <span>Barberon</span>
+    </a>
+    <nav class="header-nav" id="headerNav"></nav>
+    <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu"></div>
+</header>
+
+<main class="main-content">
+
+  <!-- ── Hero ─────────────────────────────────────────────── -->
+  <div class="container">
+    <div class="hero">
+      <h1 id="heroTitle">Bom dia! ✂️</h1>
+      <p id="heroDate"></p>
+    </div>
+
+    <!-- Search -->
+    <div class="search-bar mb-4" style="max-width:540px">
+      <span style="padding:0 0.25rem;color:var(--text-muted)">🔍</span>
+      <input type="text" id="searchInput" placeholder="Buscar barbearia, serviço…">
+      <button onclick="doSearch()">→</button>
+    </div>
+
+    <!-- Quick pills -->
+    <div class="pills mb-4" id="quickPills"></div>
+
+    <!-- Banner carousel -->
+    <div id="bannerWrap" class="mb-4 hidden">
+      <div class="carousel" id="bannerCarousel">
+        <div class="carousel-track" id="bannerTrack"></div>
+        <button class="carousel-btn prev">‹</button>
+        <button class="carousel-btn next">›</button>
+        <div class="carousel-dots" id="bannerDots"></div>
+      </div>
+    </div>
+
+    <!-- Upcoming bookings (logged-in users) -->
+    <div id="upcomingWrap" class="hidden mb-4">
+      <p class="section-title">📅 Próximos agendamentos</p>
+      <div id="upcomingList"></div>
+    </div>
+
+    <!-- Recommended barbershops -->
+    <p class="section-title">⭐ Recomendados</p>
+    <div class="barbershop-grid mb-4" id="recentGrid">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- Popular barbershops -->
+    <p class="section-title">🔥 Populares</p>
+    <div class="barbershop-grid mb-4" id="popularGrid">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <p>© <span id="yr"></span> Barberon · Todos os direitos reservados.</p>
+  <p><a href="pages/about.html">Sobre nós</a> · <a href="pages/pricing.html">Planos</a></p>
+</footer>
+
+<div id="toastContainer"></div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+const QUICK = [
+  { emoji:'✂️', label:'Cabelo',      q:'cabelo' },
+  { emoji:'🧔', label:'Barba',       q:'barba' },
+  { emoji:'👁', label:'Sobrancelha', q:'sobrancelha' },
+  { emoji:'💆', label:'Massagem',    q:'massagem' },
+  { emoji:'💧', label:'Hidratação',  q:'hidratação' },
+  { emoji:'✨', label:'Acabamento',  q:'acabamento' },
+];
+
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+// Date greeting
+(function() {
+  const now = new Date();
+  const h = now.getHours();
+  const greet = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+  document.getElementById('heroTitle').textContent = greet + '! ✂️';
+  document.getElementById('heroDate').textContent = now.toLocaleDateString('pt-BR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+})();
+
+// Quick pills
+document.getElementById('quickPills').innerHTML = QUICK.map(p =>
+  `<a class="pill" href="pages/barbershops.html?search=${encodeURIComponent(p.q)}">${p.emoji} ${p.label}</a>`
+).join('');
+
+// Load settings (banners)
+async function loadSettings() {
+  try {
+    const s = await api('/api/admin/settings.php');
+    const banners = s.banners || [];
+    if (banners.length) {
+      const track = document.getElementById('bannerTrack');
+      const dots  = document.getElementById('bannerDots');
+      banners.forEach(url => {
+        const slide = document.createElement('div');
+        slide.className = 'carousel-slide';
+        slide.innerHTML = `<img src="${url}" alt="Banner" style="width:100%;height:220px;object-fit:cover;border-radius:var(--radius)">`;
+        track.appendChild(slide);
+      });
+      document.getElementById('bannerWrap').classList.remove('hidden');
+      if (banners.length > 1) initCarousel(document.getElementById('bannerCarousel'));
+    }
+  } catch {}
+}
+
+// Load barbershops
+async function loadShops() {
+  try {
+    const shops = await api('/api/barbershops/list.php');
+    renderShops(shops.slice(0,10),  'recentGrid');
+    renderShops([...shops].sort((a,b) => a.name.localeCompare(b.name)).slice(0,10), 'popularGrid');
+  } catch(e) {
+    document.getElementById('recentGrid').innerHTML  = `<p class="text-muted text-sm">${e.message}</p>`;
+    document.getElementById('popularGrid').innerHTML = '';
+  }
+}
+
+function renderShops(shops, gridId) {
+  const grid = document.getElementById(gridId);
+  if (!shops.length) { grid.innerHTML = '<p class="text-muted text-sm">Nenhuma barbearia encontrada.</p>'; return; }
+  grid.innerHTML = shops.map(s => `
+    <div class="barbershop-card card">
+      <a href="pages/barbershop.html?id=${s.id}">
+        <img src="${s.imageUrl||'img/logo.svg'}" alt="${escHtml(s.name)}" loading="lazy" onerror="this.src='img/logo.svg'">
+        <div class="card-body">
+          <div class="card-title truncate">${escHtml(s.name)}</div>
+          <div class="card-sub truncate">📍 ${escHtml(s.address)}</div>
+        </div>
+      </a>
+    </div>`).join('');
+}
+
+// Load upcoming bookings
+async function loadUpcoming() {
+  if (!Auth.isLoggedIn()) return;
+  try {
+    const bks = await api('/api/bookings/index.php');
+    const now  = new Date();
+    const upcoming = bks.filter(b => new Date(b.date) >= now).slice(0,3);
+    if (!upcoming.length) return;
+    const wrap = document.getElementById('upcomingWrap');
+    const list = document.getElementById('upcomingList');
+    list.innerHTML = upcoming.map(b => `
+      <div class="booking-item">
+        <img src="${b.service?.imageUrl||'img/logo.svg'}" alt="" onerror="this.src='img/logo.svg'">
+        <div class="bk-info">
+          <div class="bk-shop">${escHtml(b.barbershop?.name||'')}</div>
+          <div class="bk-svc">${escHtml(b.service?.name||'')}</div>
+          <div class="bk-date">📅 ${fmtDate(b.date)}</div>
+        </div>
+        <a href="pages/bookings.html" class="btn btn-sm btn-ghost">Ver todos</a>
+      </div>`).join('');
+    wrap.classList.remove('hidden');
+  } catch {}
+}
+
+loadSettings();
+loadShops();
+loadUpcoming();
+</script>
+</body>
+</html>

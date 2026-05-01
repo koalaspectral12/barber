@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planos — Barberon</title>
+  <link rel="icon" href="../img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .toggle-switch{position:relative;display:inline-block;width:44px;height:24px}
+    .toggle-switch input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;inset:0;background:#333;border-radius:999px;transition:.3s;cursor:pointer}
+    .toggle-slider::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+    .toggle-switch input:checked+.toggle-slider{background:var(--primary)}
+    .toggle-switch input:checked+.toggle-slider::before{transform:translateX(20px)}
+    .period-btn{background:var(--bg-card);border:1px solid var(--border);border-radius:999px;padding:.35rem 1.1rem;font-size:.82rem;cursor:pointer;color:var(--text-muted);font-family:var(--font);transition:.15s}
+    .period-btn.active{background:var(--primary);color:#000;border-color:var(--primary);font-weight:600}
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="../index.html" class="brand">
+      <img src="../img/logo.svg" alt="Barberon" width="28" height="28"><span>Barberon</span>
+    </a>
+    <nav class="header-nav" id="headerNav"></nav>
+    <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu"></div>
+</header>
+
+<main class="main-content">
+  <div class="container" style="padding-top:3rem;padding-bottom:4rem">
+
+    <div style="text-align:center;margin-bottom:2.5rem">
+      <h1 style="font-size:2.2rem;font-weight:800;margin-bottom:.75rem">Planos para sua Barbearia</h1>
+      <p style="color:var(--text-muted);max-width:520px;margin:0 auto;font-size:1.05rem">
+        Escolha o plano ideal, pague com segurança via Mercado Pago e comece a receber agendamentos online agora mesmo.
+      </p>
+    </div>
+
+    <!-- Period filter -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:.75rem;margin-bottom:2.5rem;flex-wrap:wrap">
+      <button class="period-btn active" onclick="filterPeriod('all',this)">Todos</button>
+      <button class="period-btn" onclick="filterPeriod('monthly',this)">Mensal</button>
+      <button class="period-btn" onclick="filterPeriod('quarterly',this)">Trimestral</button>
+      <button class="period-btn" onclick="filterPeriod('yearly',this)">Anual
+        <span class="badge badge-primary" style="font-size:.65rem;margin-left:.25rem">-26%</span>
+      </button>
+    </div>
+
+    <!-- Plans grid -->
+    <div id="plansGrid" class="pricing-grid">
+      <div class="spinner" style="grid-column:1/-1"></div>
+    </div>
+
+    <!-- FAQ -->
+    <div style="max-width:700px;margin:4rem auto 0">
+      <h2 style="text-align:center;font-size:1.4rem;font-weight:700;margin-bottom:2rem">Perguntas frequentes</h2>
+
+      <details class="faq-item">
+        <summary>O que acontece se eu não renovar?</summary>
+        <p>Se o plano vencer e não for renovado, sua barbearia ficará inativa na plataforma e os clientes não poderão mais agendar. Basta renovar para reativar imediatamente.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Posso trocar de plano?</summary>
+        <p>Sim. Para fazer upgrade basta assinar o plano desejado. O novo plano sobrepõe o anterior.</p>
+      </details>
+      <details class="faq-item">
+        <summary>O pagamento é seguro?</summary>
+        <p>Sim. Todos os pagamentos são processados pelo Mercado Pago, com criptografia e proteção antifraude.</p>
+      </details>
+      <details class="faq-item">
+        <summary>O que é o App Exclusivo?</summary>
+        <p>No plano Anual, você pode ativar o modo App Exclusivo, que transforma a página da sua barbearia em um app independente, sem o branding da Barberon. Seu logo, sua identidade visual.</p>
+      </details>
+      <details class="faq-item">
+        <summary>O que é a Página Personalizada?</summary>
+        <p>Nos planos Trimestral e Anual, você pode customizar cores, fontes, imagens em carrossel, módulos exibidos e muito mais, diretamente no painel admin.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Posso cancelar a qualquer momento?</summary>
+        <p>Sim. Entre em contato com nosso suporte para cancelar a renovação automática.</p>
+      </details>
+    </div>
+
+  </div>
+</main>
+
+<!-- Checkout Modal -->
+<div class="modal-backdrop" id="checkoutModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <h2 class="modal-title">Confirmar assinatura</h2>
+      <button class="modal-close" onclick="closeCheckout()">✕</button>
+    </div>
+    <div id="checkoutBody" style="padding:.5rem 0 1rem"></div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <p>© <span id="yr"></span> Barberon · Todos os direitos reservados.</p>
+  <p><a href="about.html">Sobre nós</a></p>
+</footer>
+
+<div id="toastContainer"></div>
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/app.js"></script>
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+let _plans = [];
+let _currentPeriod = 'all';
+
+const PERIOD_LABEL = { monthly:'/ mês', quarterly:'/ trimestre', yearly:'/ ano' };
+const PERIOD_NAME  = { monthly:'Mensal', quarterly:'Trimestral', yearly:'Anual' };
+
+async function loadPlans() {
+  try {
+    _plans = await api('/api/admin/plans.php');
+    renderPlans();
+  } catch(e) {
+    // Show default static plans if API fails (e.g. not configured yet)
+    _plans = [
+      { id:'plan-monthly',   name:'Mensal',      period:'monthly',    price:89.90,  description:'Comece a receber agendamentos online hoje.',
+        features:['Painel admin completo','Agendamentos ilimitados','Gestão de serviços e horários','Suporte por e-mail'], customPage:false, exclusiveApp:false },
+      { id:'plan-quarterly', name:'Trimestral',  period:'quarterly',  price:239.90, description:'3 meses com economia e mais recursos.',
+        features:['Tudo do plano Mensal','Página personalizada com carrossel','Módulos customizáveis','Cores e fontes personalizadas'], customPage:true, exclusiveApp:false },
+      { id:'plan-yearly',    name:'Anual',       period:'yearly',     price:799.90, description:'Melhor custo-benefício com app exclusivo.',
+        features:['Tudo do plano Trimestral','App exclusivo sem branding Barberon','Logo e nome personalizados','PWA instalável no celular'], customPage:true, exclusiveApp:true },
+    ];
+    renderPlans();
+  }
+}
+
+function renderPlans() {
+  const filtered = _currentPeriod === 'all' ? _plans : _plans.filter(p => p.period === _currentPeriod);
+  const grid = document.getElementById('plansGrid');
+  if (!filtered.length) {
+    grid.innerHTML = '<p class="text-muted text-sm" style="grid-column:1/-1;text-align:center">Nenhum plano disponível para este período.</p>';
+    return;
+  }
+
+  // highlight middle / most popular
+  const midIdx = Math.floor(filtered.length / 2);
+
+  grid.innerHTML = filtered.map((p, i) => {
+    const highlight = filtered.length === 3 ? i === 1 : (p.period === 'quarterly');
+    const features = Array.isArray(p.features) ? p.features : [];
+    return `
+    <div class="pricing-card ${highlight ? 'pricing-highlight' : ''}" data-period="${p.period}">
+      ${highlight ? '<div class="pricing-badge">⭐ Mais popular</div>' : ''}
+      <div class="pricing-name">${escHtml(p.name)}</div>
+      <div>
+        <span class="pricing-price">R$ ${Number(p.price).toFixed(2).replace('.',',')}</span>
+        <span class="pricing-period"> ${PERIOD_LABEL[p.period]||p.period}</span>
+      </div>
+      ${p.description ? `<p class="pricing-desc">${escHtml(p.description)}</p>` : ''}
+      <ul class="pricing-features">
+        ${features.map(f => `<li>${escHtml(f)}</li>`).join('')}
+        ${p.customPage  ? `<li style="color:var(--primary);font-weight:600">🎨 Página personalizada</li>` : ''}
+        ${p.exclusiveApp? `<li style="color:var(--primary);font-weight:600">📱 App exclusivo (sem branding)</li>` : ''}
+      </ul>
+      <button class="btn ${highlight?'btn-primary':'btn-outline'} btn-block" onclick="startCheckout('${p.id}')">
+        Assinar agora
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function filterPeriod(period, btn) {
+  _currentPeriod = period;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPlans();
+}
+
+// ── Checkout ──────────────────────────────────────────────────
+async function startCheckout(planId) {
+  const user = Auth.getUser();
+  if (!user) {
+    window.location.href = `login.html?cb=${encodeURIComponent(window.location.href)}`;
+    return;
+  }
+  if (!['ADMIN','SUPERADMIN'].includes(user.role)) {
+    toast('Apenas administradores de barbearia podem assinar planos.', 'error');
+    return;
+  }
+
+  const plan = _plans.find(p => p.id === planId);
+  if (!plan) return;
+
+  // Get barbershopId from admin context
+  let shopId = null;
+  try {
+    const me = await api('/api/admin/me.php');
+    shopId = me.barbershopId;
+  } catch(e) {}
+
+  if (!shopId) {
+    toast('Conta não vinculada a uma barbearia. Contate o administrador.', 'error');
+    return;
+  }
+
+  const features = Array.isArray(plan.features) ? plan.features : [];
+  document.getElementById('checkoutBody').innerHTML = `
+    <div style="text-align:center;margin-bottom:1.25rem">
+      <div style="font-size:1.1rem;font-weight:700">${escHtml(plan.name)}</div>
+      <div style="font-size:2rem;font-weight:800;color:var(--primary)">R$ ${Number(plan.price).toFixed(2).replace('.',',')}</div>
+      <div style="font-size:.85rem;color:var(--text-muted)">${PERIOD_NAME[plan.period]||plan.period}</div>
+    </div>
+    <ul style="list-style:none;padding:0;margin-bottom:1.5rem;font-size:.875rem;display:flex;flex-direction:column;gap:.4rem">
+      ${features.map(f => `<li>✓ ${escHtml(f)}</li>`).join('')}
+    </ul>
+    <div id="checkoutError" class="alert alert-danger hidden mb-3"></div>
+    <button class="btn btn-primary btn-block" id="payBtn" onclick="confirmCheckout('${planId}','${shopId}')">
+      💳 Pagar com Mercado Pago
+    </button>
+    <p style="text-align:center;font-size:.78rem;color:var(--text-muted);margin-top:.75rem">
+      🔒 Pagamento seguro via Mercado Pago
+    </p>`;
+
+  document.getElementById('checkoutModal').classList.add('open');
+}
+
+function closeCheckout() {
+  document.getElementById('checkoutModal').classList.remove('open');
+}
+document.getElementById('checkoutModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeCheckout();
+});
+
+async function confirmCheckout(planId, barbershopId) {
+  const btn   = document.getElementById('payBtn');
+  const errEl = document.getElementById('checkoutError');
+  btn.disabled = true; btn.textContent = 'Aguarde…';
+  errEl.classList.add('hidden');
+  try {
+    const res = await api('/api/payments/plan-checkout.php', {
+      method: 'POST',
+      body: JSON.stringify({ planId, barbershopId }),
+    });
+    if (res.checkoutUrl) {
+      btn.textContent = 'Redirecionando…';
+      window.location.href = res.checkoutUrl;
+    }
+  } catch(e) {
+    errEl.textContent = e.message || 'Erro ao iniciar pagamento.';
+    errEl.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = '💳 Pagar com Mercado Pago';
+  }
+}
+
+loadPlans();
+</script>
+</body>
+</html>

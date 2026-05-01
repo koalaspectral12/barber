@@ -6,6 +6,7 @@
  */
 require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+cors_headers();
 
 header('Content-Type: application/json; charset=utf-8');
 

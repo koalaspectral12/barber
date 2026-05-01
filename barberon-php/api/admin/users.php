@@ -5,6 +5,7 @@
  * POST /api/admin/users.php?action=demote      — demote admin back to CUSTOMER
  */
 require_once __DIR__ . '/../../includes/auth.php';
+cors_headers();
 
 header('Content-Type: application/json; charset=utf-8');
 

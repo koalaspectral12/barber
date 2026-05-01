@@ -16,12 +16,23 @@ RewriteRule ^entrar/?$              pages/login.php              [QSA,L]
 # Block direct access to includes/
 RewriteRule ^includes/  - [F,L]
 
-# Security headers
+# Security headers + CORS for GitHub Pages static frontend
 <IfModule mod_headers.c>
-  Header always set X-Frame-Options "SAMEORIGIN"
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Allow all origins for API endpoints (PHP handles per-request CORS via cors_headers())
+  # These headers are fallbacks for preflight requests
+  <FilesMatch "\.(php)$">
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+  </FilesMatch>
 </IfModule>
+
+# Handle OPTIONS preflight requests
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule .* - [R=204,L]
 
 # PHP settings
 <IfModule mod_php.c>

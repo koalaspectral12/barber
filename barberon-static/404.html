@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Página não encontrada — Barberon</title>
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:#1a1a1a;color:#e4e4e7;font-family:'Inter',system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+    .card{background:#242424;border:1px solid #333;border-radius:1rem;padding:3rem 2rem;text-align:center;max-width:460px;width:100%}
+    h1{font-size:5rem;font-weight:800;color:#f59e0b;line-height:1}
+    h2{font-size:1.25rem;font-weight:700;margin:.75rem 0 .5rem}
+    p{color:#a1a1aa;font-size:.95rem;margin-bottom:1.5rem}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:.6rem 1.4rem;border-radius:.5rem;font-weight:600;font-size:.9rem;text-decoration:none;border:none;cursor:pointer;margin:.25rem}
+    .btn-primary{background:#f59e0b;color:#000}
+    .btn-outline{background:transparent;border:1px solid #444;color:#e4e4e7}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div style="font-size:4rem;margin-bottom:.5rem">✂️</div>
+    <h1>404</h1>
+    <h2>Página não encontrada</h2>
+    <p>O link pode estar errado ou a página foi removida.</p>
+    <div>
+      <a href="/" class="btn btn-primary">← Início</a>
+      <a href="/pages/barbershops.html" class="btn btn-outline">Ver barbearias</a>
+    </div>
+  </div>
+  <script>
+    // GitHub Pages SPA redirect hack — preserve path for SPA routing
+    const path = sessionStorage.getItem('gh_redirect');
+    if (path) { sessionStorage.removeItem('gh_redirect'); window.location.replace(path); }
+  </script>
+</body>
+</html>

@@ -5,6 +5,7 @@
  * DELETE /api/bookings/index.php?id=xxx — cancel a booking
  */
 require_once __DIR__ . '/../../includes/auth.php';
+cors_headers();
 
 header('Content-Type: application/json; charset=utf-8');
 

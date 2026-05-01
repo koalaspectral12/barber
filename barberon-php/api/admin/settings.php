@@ -4,6 +4,7 @@
  * PUT  /api/admin/settings.php — update app settings (SUPERADMIN)
  */
 require_once __DIR__ . '/../../includes/auth.php';
+cors_headers();
 
 header('Content-Type: application/json; charset=utf-8');
 

@@ -6,6 +6,7 @@
  * DELETE /api/admin/services.php?id=xxx — delete
  */
 require_once __DIR__ . '/../../includes/auth.php';
+cors_headers();
 
 header('Content-Type: application/json; charset=utf-8');
 
