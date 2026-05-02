@@ -702,9 +702,7 @@ function buildCal(containerId, onSelect) {
   render();
 }
 
-const API_BASE = window.BARBERON_CONFIG?.API_BASE || '';
-const ROOT     = window.BARBERON_CONFIG?.SITE_BASE || '';
-
+// API_BASE and ROOT are already declared in api.js (loaded above)
 loadApp();
 </script>
 </body>

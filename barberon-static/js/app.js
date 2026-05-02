@@ -54,11 +54,16 @@ function toggleMenu() {
 
 // ── Render header nav (dynamic, auth-aware) ───────────────────
 function renderNav() {
-  const user       = Auth.getUser();
-  const isAdmin    = user && ['ADMIN','SUPERADMIN'].includes(user.role);
-  const navEl      = document.getElementById('headerNav');
-  const mobileEl   = document.getElementById('mobileMenu');
-  const base       = ROOT;
+  const user     = Auth.getUser();
+  const isAdmin  = user && ['ADMIN','SUPERADMIN'].includes(user.role);
+  const navEl    = document.getElementById('headerNav');
+  const mobileEl = document.getElementById('mobileMenu');
+
+  // Resolve BASE relative to current page depth so links work from
+  // both root pages (index.html) and subpages (pages/*.html).
+  // ROOT from config.js is the GitHub Pages repo prefix (e.g. '/barber').
+  // We normalise so every href becomes ROOT/pages/... or ROOT/admin/...
+  const base = (ROOT || '').replace(/\/$/, '');
 
   if (!navEl) return;
 
@@ -97,26 +102,29 @@ function initCarousel(el) {
   if (!track || slides.length < 2) return;
   let current = 0;
   const total = slides.length;
-  const dots = [];
+  const dots  = [];
   slides.forEach((_, i) => {
     const d = document.createElement('button');
     d.className = 'carousel-dot' + (i === 0 ? ' active' : '');
-    d.onclick = () => goTo(i);
+    d.onclick = () => carouselGoTo(i);
     dotsEl?.appendChild(d);
     dots.push(d);
   });
-  function goTo(n) {
+  function carouselGoTo(n) {
     current = (n + total) % total;
     track.style.transform = `translateX(-${current * 100}%)`;
     dots.forEach((d, i) => d.classList.toggle('active', i === current));
   }
-  el.querySelector('.carousel-btn.prev')?.addEventListener('click', () => goTo(current - 1));
-  el.querySelector('.carousel-btn.next')?.addEventListener('click', () => goTo(current + 1));
-  setInterval(() => goTo(current + 1), 4500);
+  el.querySelector('.carousel-btn.prev')?.addEventListener('click', () => carouselGoTo(current - 1));
+  el.querySelector('.carousel-btn.next')?.addEventListener('click', () => carouselGoTo(current + 1));
+  setInterval(() => carouselGoTo(current + 1), 4500);
 }
 
 // ── Calendar ──────────────────────────────────────────────────
-function buildCalendar(containerId, onSelect, selectedDate = null) {
+// openDaysSet: optional Set of day-of-week numbers (0=Sun…6=Sat) that are open.
+// Days NOT in the set will be styled as 'closed' (greyed, but still selectable
+// so the user sees "no slots" message — better UX than silently blocking them).
+function buildCalendar(containerId, onSelect, selectedDate = null, openDaysSet = null) {
   const container = document.getElementById(containerId);
   if (!container) return;
   const today = new Date(); today.setHours(0,0,0,0);
@@ -138,16 +146,27 @@ function buildCalendar(containerId, onSelect, selectedDate = null) {
     for (let d = 1; d <= daysInMo; d++) {
       const dt  = new Date(viewYear, viewMonth, d);
       const iso = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const dow = dt.getDay();
+      const isPast   = dt < today;
+      const isToday  = dt.getTime() === today.getTime();
+      const isClosed = openDaysSet !== null && !openDaysSet.has(dow);
+
       let cls = 'cal-day';
-      if (dt < today)                       cls += ' disabled';
-      if (dt.getTime() === today.getTime()) cls += ' today';
-      if (selected === iso)                 cls += ' selected';
-      html += `<div class="${cls}" data-date="${iso}">${d}</div>`;
+      if (isPast)              cls += ' disabled';
+      if (isToday)             cls += ' today';
+      if (selected === iso)    cls += ' selected';
+      if (!isPast && isClosed) cls += ' closed-day';   // open for click, styled grey
+
+      html += `<div class="${cls}" data-date="${iso}" title="${isClosed && !isPast ? 'Fechado neste dia' : ''}">${d}</div>`;
     }
     html += '</div></div>';
     container.innerHTML = html;
-    container.querySelector('#calPrev')?.addEventListener('click', () => { viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } render(); });
-    container.querySelector('#calNext')?.addEventListener('click', () => { viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } render(); });
+    container.querySelector('#calPrev')?.addEventListener('click', () => {
+      viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } render();
+    });
+    container.querySelector('#calNext')?.addEventListener('click', () => {
+      viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } render();
+    });
     container.querySelectorAll('.cal-day:not(.disabled):not(.empty)').forEach(el => {
       el.addEventListener('click', () => { selected = el.dataset.date; render(); onSelect(selected); });
     });
@@ -158,28 +177,45 @@ function buildCalendar(containerId, onSelect, selectedDate = null) {
 // ══════════════════════════════════════════════════════════════
 // BOOKING FLOW
 // ══════════════════════════════════════════════════════════════
-let _bk = { serviceId:null, serviceName:null, duration:'00:30', price:0, barbershopId:null, date:null, time:null };
+let _bk = {
+  serviceId: null, serviceName: null, duration: '00:30',
+  price: 0, barbershopId: null, date: null, time: null,
+};
 
 function openBookingModal(serviceId, serviceName, barbershopId, duration, price) {
   if (!Auth.isLoggedIn()) {
-    goTo(`/pages/login.html?cb=${encodeURIComponent(window.location.href)}`);
+    // Use absolute URL so login page can redirect back correctly
+    const loginBase = (ROOT || '').replace(/\/$/, '');
+    window.location.href = loginBase + '/pages/login.html?cb=' + encodeURIComponent(window.location.href);
     return;
   }
-  Object.assign(_bk, { serviceId, serviceName, barbershopId, duration: duration||'00:30', price: price||0, date: null, time: null });
+  Object.assign(_bk, {
+    serviceId, serviceName, barbershopId,
+    duration: duration || '00:30', price: price || 0,
+    date: null, time: null,
+  });
   document.getElementById('modalServiceName').textContent = serviceName;
-  document.getElementById('modalServiceMeta').textContent = [fmtDuration(duration), fmtPrice(price)].filter(Boolean).join(' · ');
+  document.getElementById('modalServiceMeta').textContent =
+    [fmtDuration(duration), fmtPrice(price)].filter(Boolean).join(' · ');
   _bkShowStep(1);
+
+  // Use _openDays if the barbershop page set it, otherwise pass null (all days allowed)
+  const openSet = (typeof _openDays !== 'undefined' && _openDays instanceof Set) ? _openDays : null;
+
   buildCalendar('bookingCalendar', async (date) => {
     _bk.date = date; _bk.time = null;
     _bkShowStep(2);
     const el = document.getElementById('bkSelectedDate');
     if (el) el.textContent = fmtDateShort(date + 'T12:00:00');
     await _bkLoadSlots(date);
-  });
+  }, null, openSet);
+
   document.getElementById('bookingModal').classList.add('open');
 }
 
-function closeBookingModal() { document.getElementById('bookingModal')?.classList.remove('open'); }
+function closeBookingModal() {
+  document.getElementById('bookingModal')?.classList.remove('open');
+}
 
 function _bkShowStep(n) {
   [1,2,3].forEach(i => document.getElementById('bkStep'+i)?.classList.toggle('hidden', i !== n));
@@ -191,18 +227,30 @@ async function _bkLoadSlots(date) {
   const slotEl = document.getElementById('bookingSlots');
   slotEl.innerHTML = '<div class="spinner spinner-sm" style="margin:1rem auto"></div>';
   try {
-    const data = await api(`/api/barbershops/hours.php?barbershopId=${_bk.barbershopId}&date=${date}&serviceId=${_bk.serviceId}`);
-    if (!data.slots?.length || !data.slots.some(s => s.available)) {
-      slotEl.innerHTML = '<div class="empty-slots">Nenhum horário disponível. Escolha outra data.</div>';
+    const data = await api(
+      `/api/barbershops/hours.php?barbershopId=${encodeURIComponent(_bk.barbershopId)}&date=${date}&serviceId=${encodeURIComponent(_bk.serviceId)}`
+    );
+    const slots = data.slots || [];
+    const available = slots.filter(s => s.available);
+
+    if (!available.length) {
+      const msg = data.message || 'Nenhum horário disponível neste dia.';
+      slotEl.innerHTML = `
+        <div class="empty-slots">
+          <p style="margin-bottom:.75rem">${escHtml(msg)}</p>
+          <button class="btn btn-ghost btn-sm" onclick="bkBackToDate()">← Escolher outra data</button>
+        </div>`;
       return;
     }
+
     slotEl.innerHTML = '<div class="slot-grid"></div>';
     const grid = slotEl.querySelector('.slot-grid');
-    data.slots.forEach(s => {
+    slots.forEach(s => {
       const btn = document.createElement('button');
       btn.className = 'slot-btn' + (s.available ? '' : ' booked');
       btn.textContent = s.time;
       btn.disabled = !s.available;
+      btn.title = s.available ? '' : 'Horário ocupado';
       btn.addEventListener('click', () => {
         grid.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
@@ -213,7 +261,11 @@ async function _bkLoadSlots(date) {
       grid.appendChild(btn);
     });
   } catch (e) {
-    slotEl.innerHTML = `<div class="empty-slots text-danger">${e.message}</div>`;
+    slotEl.innerHTML = `
+      <div class="empty-slots">
+        <p class="text-danger">${escHtml(e.message)}</p>
+        <button class="btn btn-ghost btn-sm mt-3" onclick="bkBackToDate()">← Escolher outra data</button>
+      </div>`;
   }
 }
 
@@ -241,6 +293,8 @@ async function confirmBooking() {
     });
     closeBookingModal();
     toast('✅ Agendamento realizado!', 'success');
+    // If bookings page is visible, refresh it
+    if (typeof loadBookings === 'function') loadBookings();
   } catch (e) {
     if (errEl) { errEl.textContent = e.message; errEl.classList.remove('hidden'); }
     else toast(e.message, 'error');
@@ -251,12 +305,16 @@ async function confirmBooking() {
 // ── Quick search ──────────────────────────────────────────────
 function doSearch(inputId) {
   const q = document.getElementById(inputId || 'searchInput')?.value.trim();
-  if (q) goTo(`/pages/barbershops.html?search=${encodeURIComponent(q)}`);
+  if (!q) return;
+  const base = (ROOT || '').replace(/\/$/, '');
+  window.location.href = base + '/pages/barbershops.html?search=' + encodeURIComponent(q);
 }
 
 // ── DOMContentLoaded init ─────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   renderNav();
-  document.getElementById('searchInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+  document.getElementById('searchInput')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
   document.querySelectorAll('.carousel').forEach(initCarousel);
 });

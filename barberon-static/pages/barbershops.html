@@ -122,17 +122,20 @@ function filterShops(q) {
     return;
   }
   empty.classList.add('hidden');
-  grid.innerHTML = filtered.map(s => `
+  grid.innerHTML = filtered.map(s => {
+    const href = s.slug ? `../b/${s.slug}.html` : `barbershop.html?id=${s.id}`;
+    return `
     <div class="barbershop-card card">
-      <a href="barbershop.html?id=${s.id}">
+      <a href="${href}">
         <img src="${s.imageUrl||'../img/logo.svg'}" alt="${escHtml(s.name)}" loading="lazy" onerror="this.src='../img/logo.svg'" style="height:180px;object-fit:cover;width:100%">
         <div class="card-body">
           <div class="card-title truncate">${escHtml(s.name)}</div>
           <div class="card-sub truncate">📍 ${escHtml(s.address||'')}</div>
           ${s.description ? `<div class="card-sub truncate mt-2" style="font-size:0.78rem">${escHtml(s.description)}</div>` : ''}
+          ${s.slug ? `<div class="mt-2"><span class="badge badge-primary" style="font-size:.65rem">🔗 /${s.slug}</span></div>` : ''}
         </div>
       </a>
-    </div>`).join('');
+    </div>`;}).join('');
 }
 
 function doSearch() {

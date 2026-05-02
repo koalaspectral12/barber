@@ -1,18 +1,25 @@
 /**
  * Barberon — Static Site Configuration
  * ─────────────────────────────────────
- * Set API_BASE to the URL where your PHP backend is hosted.
- * Examples:
- *   'https://seusite.com.br/barberon'   (HostGator subfolder)
- *   'https://api.seusite.com.br'        (subdomain)
- *   'http://localhost:8080'             (local dev)
+ * PASSO 1: Defina API_BASE com a URL do seu backend PHP no HostGator.
+ * PASSO 2: Defina SITE_BASE com o caminho base do GitHub Pages.
+ *
+ * Exemplos de API_BASE:
+ *   'https://seusite.com.br/barberon'   → HostGator em subpasta
+ *   'https://api.seusite.com.br'        → subdomínio dedicado
+ *   'http://localhost:8080'             → desenvolvimento local
+ *
+ * Exemplos de SITE_BASE (GitHub Pages):
+ *   ''          → domínio próprio ou raiz (https://seusite.com/)
+ *   '/barber'   → https://koalaspectral12.github.io/barber/
  */
 window.BARBERON_CONFIG = {
-  API_BASE: 'https://your-backend.com/barberon',  // ← CHANGE THIS
+  // ← MUDE PARA A URL DO SEU BACKEND HOSTGATOR ←
+  API_BASE: 'https://seusite.com.br/barberon',
 
-  // App name shown in tab titles and header
+  // Nome do app exibido no título das abas
   APP_NAME: 'Barberon',
 
-  // GitHub Pages base path (leave '' if at root, e.g. '/barberon' if at github.io/barberon)
-  SITE_BASE: '',
+  // Caminho base do GitHub Pages ('' se domínio próprio, '/barber' se github.io/barber)
+  SITE_BASE: '/barber',
 };

@@ -148,16 +148,18 @@ async function loadShops() {
 function renderShops(shops, gridId) {
   const grid = document.getElementById(gridId);
   if (!shops.length) { grid.innerHTML = '<p class="text-muted text-sm">Nenhuma barbearia encontrada.</p>'; return; }
-  grid.innerHTML = shops.map(s => `
+  grid.innerHTML = shops.map(s => {
+    const href = s.slug ? `b/${s.slug}.html` : `pages/barbershop.html?id=${s.id}`;
+    return `
     <div class="barbershop-card card">
-      <a href="pages/barbershop.html?id=${s.id}">
+      <a href="${href}">
         <img src="${s.imageUrl||'img/logo.svg'}" alt="${escHtml(s.name)}" loading="lazy" onerror="this.src='img/logo.svg'">
         <div class="card-body">
           <div class="card-title truncate">${escHtml(s.name)}</div>
           <div class="card-sub truncate">📍 ${escHtml(s.address)}</div>
         </div>
       </a>
-    </div>`).join('');
+    </div>`;}).join('');
 }
 
 // Load upcoming bookings

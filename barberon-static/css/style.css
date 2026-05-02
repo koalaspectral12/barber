@@ -263,6 +263,8 @@ button { cursor: pointer; font-family: inherit; }
 .cal-day.selected { background: var(--primary); color: #000; }
 .cal-day.disabled { color: var(--text-muted); opacity: .4; cursor: not-allowed; }
 .cal-day.empty { pointer-events: none; }
+.cal-day.closed-day { color: var(--text-muted); opacity: .55; }
+.cal-day.closed-day:hover { background: var(--bg-hover); }
 
 /* ── Bookings page ───────────────────────────────────────────── */
 .booking-item { display: flex; gap: 0.75rem; align-items: center; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); margin-bottom: 0.75rem; }

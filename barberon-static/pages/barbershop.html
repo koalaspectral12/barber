@@ -44,6 +44,9 @@
     <div id="bkStep1">
       <p class="text-sm font-semibold mb-3">Escolha a data</p>
       <div id="bookingCalendar"></div>
+      <p class="text-xs text-muted mt-2" id="bkClosedNote" style="display:none">
+        ⚠️ Dias sem disponibilidade estão marcados. Selecione qualquer data futura disponível.
+      </p>
     </div>
     <!-- Step 2: Time slots -->
     <div id="bkStep2" class="hidden">
@@ -86,37 +89,64 @@
 <script>
 document.getElementById('yr').textContent = new Date().getFullYear();
 
-const shopId = getParam('id');
-if (!shopId) { window.location.href = '../pages/barbershops.html'; }
+// Get shop ID from URL — supports ?id=X and also slug redirect ?slug=X
+const shopId   = getParam('id');
+const shopSlug = getParam('slug');
 
-const DAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+if (!shopId && !shopSlug) {
+  window.location.href = 'barbershops.html';
+}
+
+const DAYS_FULL = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const DAYS_SHORT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+// Open days set (day-of-week 0–6 that have hours configured)
+let _openDays = new Set();
 
 async function loadShop() {
   const content = document.getElementById('pageContent');
   try {
-    // Load shop + services + hours
-    const [shop, services, hours] = await Promise.all([
-      api(`/api/barbershops/list.php?id=${shopId}`),
-      api(`/api/admin/services.php?barbershopId=${shopId}`).catch(() => []),
-      api(`/api/barbershops/hours.php?barbershopId=${shopId}`).catch(() => []),
-    ]);
+    let shopData;
 
-    // shop may be array or object
-    const s = Array.isArray(shop) ? shop[0] : shop;
+    // If we have a slug instead of ID, resolve it first
+    if (shopSlug && !shopId) {
+      shopData = await api(`/api/barbershops/list.php?slug=${encodeURIComponent(shopSlug)}`);
+    } else {
+      // GET /api/barbershops/list.php?id=X returns shop with services and hours embedded
+      shopData = await api(`/api/barbershops/list.php?id=${shopId}`);
+    }
+
+    // Normalise — API may return array or object
+    const s = Array.isArray(shopData) ? shopData[0] : shopData;
     if (!s) throw new Error('Barbearia não encontrada.');
 
     document.title = `${s.name} — Barberon`;
 
-    // Build phones
+    // Services: already embedded in shop response as s.services
+    const services = s.services || [];
+
+    // Hours: already embedded as s.hours
+    const hours = s.hours || [];
+
+    // Build open-days set for calendar
+    _openDays.clear();
+    hours.forEach(h => { if (!h.closed) _openDays.add(Number(h.dayOfWeek)); });
+
+    // Build phones array
     let phones = [];
-    try { phones = JSON.parse(s.phones || '[]'); } catch {}
+    try { phones = Array.isArray(s.phones) ? s.phones : JSON.parse(s.phones || '[]'); } catch {}
     if (!Array.isArray(phones)) phones = [];
 
-    // Build page
+    // Short link
+    const shopLink = s.slug
+      ? `<a href="b/${s.slug}.html" class="badge badge-primary" title="Link amigável" style="cursor:pointer;text-decoration:none">🔗 barberon.shop/${s.slug}</a>`
+      : '';
+
+    // Build page HTML
     content.innerHTML = `
       <!-- Hero image -->
       <div class="shop-hero">
-        <img src="${s.imageUrl||'../img/logo.svg'}" alt="${escHtml(s.name)}"
+        <img src="${s.imageUrl || '../img/logo.svg'}" alt="${escHtml(s.name)}"
              onerror="this.src='../img/logo.svg'" style="height:260px;object-fit:cover;width:100%">
         <a href="barbershops.html" class="shop-back btn btn-outline btn-sm">← Voltar</a>
       </div>
@@ -124,11 +154,12 @@ async function loadShop() {
       <!-- Info -->
       <div class="shop-info container">
         <h1>${escHtml(s.name)}</h1>
-        <p class="address">📍 ${escHtml(s.address||'')}</p>
+        <p class="address">📍 ${escHtml(s.address || '')}</p>
         ${phones.length ? `<div class="mt-2 flex gap-2" style="flex-wrap:wrap">
           ${phones.map(p => `<a href="tel:${escHtml(p)}" class="badge">📞 ${escHtml(p)}</a>`).join('')}
         </div>` : ''}
         ${s.description ? `<p class="text-muted text-sm mt-2">${escHtml(s.description)}</p>` : ''}
+        ${shopLink ? `<div class="mt-2">${shopLink}</div>` : ''}
       </div>
 
       <!-- Hours -->
@@ -136,12 +167,14 @@ async function loadShop() {
       <div class="container mb-4">
         <p class="section-title">🕐 Horários de funcionamento</p>
         <div class="hours-grid">
-          ${hours.map(h => {
+          ${DAYS_SHORT.map((dayName, idx) => {
+            const h = hours.find(h => Number(h.dayOfWeek) === idx);
             const today = new Date().getDay();
-            const isToday = h.dayOfWeek === today;
-            return `<div class="hours-row${isToday?' today':''}">
-              <span class="font-semibold">${DAYS[h.dayOfWeek]||h.dayOfWeek}</span>
-              <span class="text-muted">${h.closed ? 'Fechado' : `${h.openTime}–${h.closeTime}`}</span>
+            const isToday = idx === today;
+            const isClosed = !h || h.closed;
+            return `<div class="hours-row${isToday ? ' today' : ''}">
+              <span class="font-semibold">${dayName}</span>
+              <span class="${isClosed ? 'text-muted' : ''}">${isClosed ? 'Fechado' : `${h.openTime}–${h.closeTime}`}</span>
             </div>`;
           }).join('')}
         </div>
@@ -151,12 +184,12 @@ async function loadShop() {
       <div class="container mb-4">
         <p class="section-title">✂️ Serviços</p>
         <div id="servicesWrap">
-          ${renderServices(services || [])}
+          ${renderServices(services, s.id)}
         </div>
       </div>
     `;
 
-    // Store barbershopId for booking
+    // Store barbershopId for booking flow
     _bk.barbershopId = s.id;
 
   } catch(e) {
@@ -170,25 +203,31 @@ async function loadShop() {
   }
 }
 
-function renderServices(svcs) {
+function renderServices(svcs, barbershopId) {
   if (!svcs.length) {
-    return `<div class="empty-state" style="text-align:center;padding:2rem;border:1px dashed var(--border);border-radius:var(--radius)">
+    return `<div style="text-align:center;padding:2rem;border:1px dashed var(--border);border-radius:var(--radius)">
       <p class="text-muted text-sm">Nenhum serviço cadastrado.</p>
     </div>`;
   }
+  const bsId = barbershopId || shopId || '';
   return `<div class="services-list">` + svcs.map(svc => `
     <div class="service-card">
-      <img src="${svc.imageUrl||'../img/logo.svg'}" alt="${escHtml(svc.name)}" loading="lazy" onerror="this.src='../img/logo.svg'">
+      <img src="${svc.imageUrl || '../img/logo.svg'}" alt="${escHtml(svc.name)}" loading="lazy" onerror="this.src='../img/logo.svg'">
       <div class="svc-info">
         <div class="svc-name">${escHtml(svc.name)}</div>
         ${svc.description ? `<div class="svc-desc">${escHtml(svc.description)}</div>` : ''}
-        <div class="svc-price">${fmtPrice(svc.price)} <span class="svc-dur">${fmtDuration(svc.duration)}</span></div>
+        <div class="svc-price">${fmtPrice(svc.price)} <span class="svc-dur">${fmtDuration(svc.duration || '00:30')}</span></div>
       </div>
       <button class="btn btn-primary btn-sm book-btn"
-        onclick="openBookingModal('${svc.id}','${escHtml(svc.name).replace(/'/g,"\\'")}','${shopId}','${svc.duration||'00:30'}',${parseFloat(svc.price)||0})">
+        onclick="openBookingModal('${escAttr(svc.id)}','${escAttr(svc.name)}','${escAttr(bsId)}','${svc.duration || '00:30'}',${parseFloat(svc.price) || 0})">
         Reservar
       </button>
     </div>`).join('') + `</div>`;
+}
+
+// Safe attribute escaping (no quotes inside onclick string values)
+function escAttr(s) {
+  return String(s || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
 }
 
 loadShop();

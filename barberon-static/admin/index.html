@@ -779,21 +779,29 @@ async function reloadShops() {
     const shops=await api('/api/admin/barbershops.php');
     if(!shops.length){wrap.innerHTML='<p class="text-muted text-sm">Nenhuma barbearia cadastrada.</p>';return;}
     wrap.innerHTML=`<div class="admin-table-wrap"><table class="admin-table">
-      <thead><tr><th>Nome</th><th>Endereço</th><th>Ativo</th><th>Ações</th></tr></thead>
-      <tbody>${shops.map(s=>`<tr>
-        <td><a href="${ROOT}/pages/barbershop.html?id=${s.id}" target="_blank" style="color:var(--primary)">${escHtml(s.name)}</a></td>
-        <td class="text-muted text-sm">${escHtml(s.address||'-')}</td>
-        <td><span class="badge badge-${s.active?'success':'danger'}">${s.active?'Ativo':'Inativo'}</span></td>
-        <td style="white-space:nowrap">
-          <button class="btn btn-ghost btn-sm" onclick="openShopDialog(${JSON.stringify(JSON.stringify(s))})">Editar</button>
-          <button class="btn ${s.active?'btn-danger':'btn-outline'} btn-sm" onclick="toggleShop('${s.id}',${!s.active})">${s.active?'Desativar':'Ativar'}</button>
-        </td>
-      </tr>`).join('')}</tbody>
+      <thead><tr><th>Nome</th><th>Slug / Link amigável</th><th>Ativo</th><th>Ações</th></tr></thead>
+      <tbody>${shops.map(s=>{
+        const slugLink = s.slug
+          ? `<a href="${ROOT}/b/${escHtml(s.slug)}.html" target="_blank" class="badge badge-primary" title="Link amigável">/${escHtml(s.slug)}</a>`
+          : `<span class="text-muted text-xs">Não definido</span>`;
+        return `<tr>
+          <td>
+            <a href="${ROOT}/pages/barbershop.html?id=${s.id}" target="_blank" style="color:var(--primary)">${escHtml(s.name)}</a>
+            ${s.customDomain?`<br><span class="text-xs text-muted">🌐 ${escHtml(s.customDomain)}</span>`:''}
+          </td>
+          <td>${slugLink}</td>
+          <td><span class="badge badge-${s.active?'success':'danger'}">${s.active?'Ativo':'Inativo'}</span></td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-ghost btn-sm" onclick="openShopDialog(${JSON.stringify(JSON.stringify(s))})">Editar</button>
+            <button class="btn ${s.active?'btn-danger':'btn-outline'} btn-sm" onclick="toggleShop('${s.id}',${!s.active})">${s.active?'Desativar':'Ativar'}</button>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
     </table></div>`;
   } catch(e){wrap.innerHTML=`<p class="text-danger text-sm">${escHtml(e.message)}</p>`;}
 }
 
-function shopDialog(){return`<div class="dialog-backdrop" id="shopDialog"><div class="dialog">
+function shopDialog(){return`<div class="dialog-backdrop" id="shopDialog"><div class="dialog" style="max-width:580px">
   <h3 class="dialog-title" id="shopDlgTitle">Nova barbearia</h3>
   <input type="hidden" id="shopId">
   <div class="form-group"><label class="form-label">Nome *</label><input class="form-input" id="shopName" placeholder="Barbearia do João"></div>
@@ -801,6 +809,16 @@ function shopDialog(){return`<div class="dialog-backdrop" id="shopDialog"><div c
   <div class="form-group"><label class="form-label">Telefones (separados por vírgula)</label><input class="form-input" id="shopPhone" placeholder="(11) 99999-9999, (11) 3333-4444"></div>
   <div class="form-group"><label class="form-label">Descrição</label><textarea class="form-input form-textarea" id="shopDesc"></textarea></div>
   <div class="form-group"><label class="form-label">URL da imagem</label><input class="form-input" id="shopImg" placeholder="https://…"></div>
+  <div class="form-group">
+    <label class="form-label">🔗 Slug (link amigável)</label>
+    <input class="form-input" id="shopSlug" placeholder="luiz" pattern="[a-z0-9\-]+" title="Apenas letras minúsculas, números e hífens">
+    <p class="text-xs text-muted mt-1" id="shopSlugPreview">Link: —</p>
+  </div>
+  <div class="form-group">
+    <label class="form-label">🌐 Domínio/Subdomínio customizado (opcional)</label>
+    <input class="form-input" id="shopDomain" placeholder="luiz.barberon.shop">
+    <p class="text-xs text-muted mt-1">Configure o DNS apontando para o servidor antes de ativar.</p>
+  </div>
   <div class="form-group"><label style="display:flex;align-items:center;gap:.5rem;cursor:pointer"><input type="checkbox" id="shopActive" checked style="accent-color:var(--primary)"> Ativo</label></div>
   <div id="shopErr" class="alert alert-danger hidden mb-3"></div>
   <div class="flex gap-3">
@@ -812,21 +830,34 @@ function shopDialog(){return`<div class="dialog-backdrop" id="shopDialog"><div c
 function openShopDialog(jsonStr){
   const errEl=document.getElementById('shopErr');
   errEl.classList.add('hidden');
+  const slugInput=document.getElementById('shopSlug');
+  const slugPreview=document.getElementById('shopSlugPreview');
+  // Live slug preview
+  slugInput.oninput=()=>{
+    const v=slugInput.value.trim();
+    const base=(ROOT||'').replace(/\/$/,'');
+    slugPreview.textContent=v ? `Link: ${base}/b/${v}.html` : 'Link: —';
+  };
   if(jsonStr){
     const s=JSON.parse(jsonStr);
     document.getElementById('shopDlgTitle').textContent='Editar barbearia';
     document.getElementById('shopId').value   =s.id;
     document.getElementById('shopName').value =s.name;
     document.getElementById('shopAddr').value =s.address||'';
-    let phones=[];try{phones=JSON.parse(s.phones||'[]');}catch{}
+    let phones=s.phones;if(!Array.isArray(phones)){try{phones=JSON.parse(phones||'[]');}catch{phones=[];}}
     document.getElementById('shopPhone').value=(phones||[]).join(', ');
     document.getElementById('shopDesc').value =s.description||'';
     document.getElementById('shopImg').value  =s.imageUrl||'';
+    document.getElementById('shopSlug').value =s.slug||'';
+    document.getElementById('shopDomain').value=s.customDomain||'';
     document.getElementById('shopActive').checked=!!s.active;
+    const base=(ROOT||'').replace(/\/$/,'');
+    slugPreview.textContent=s.slug ? `Link: ${base}/b/${s.slug}.html` : 'Link: —';
   }else{
     document.getElementById('shopDlgTitle').textContent='Nova barbearia';
-    ['shopId','shopName','shopAddr','shopPhone','shopDesc','shopImg'].forEach(id=>document.getElementById(id).value='');
+    ['shopId','shopName','shopAddr','shopPhone','shopDesc','shopImg','shopSlug','shopDomain'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('shopActive').checked=true;
+    slugPreview.textContent='Link: —';
   }
   document.getElementById('shopDialog').classList.add('open');
 }
@@ -839,7 +870,8 @@ async function saveShop(){
   if(!name){errEl.textContent='Nome é obrigatório.';errEl.classList.remove('hidden');return;}
   btn.disabled=true;btn.textContent='Salvando…';
   const phones=document.getElementById('shopPhone').value.split(',').map(p=>p.trim()).filter(Boolean);
-  const body={name,address:document.getElementById('shopAddr').value,phones:JSON.stringify(phones),description:document.getElementById('shopDesc').value,imageUrl:document.getElementById('shopImg').value,active:document.getElementById('shopActive').checked};
+  const slug=document.getElementById('shopSlug').value.trim().toLowerCase().replace(/[^a-z0-9\-]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+  const body={name,address:document.getElementById('shopAddr').value,phones,description:document.getElementById('shopDesc').value,imageUrl:document.getElementById('shopImg').value,active:document.getElementById('shopActive').checked,slug:slug||null,customDomain:document.getElementById('shopDomain').value.trim()||null};
   try{
     if(id){body.id=id;await api('/api/admin/barbershops.php',{method:'PUT',body:JSON.stringify(body)});}
     else await api('/api/admin/barbershops.php',{method:'POST',body:JSON.stringify(body)});
