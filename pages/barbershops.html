@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barbearias — Barberon</title>
+  <link rel="icon" href="../img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="../index.html" class="brand">
+      <img src="../img/logo.svg" alt="Barberon" width="28" height="28"><span>Barberon</span>
+    </a>
+    <nav class="header-nav" id="headerNav"></nav>
+    <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu"></div>
+</header>
+
+<main class="main-content">
+  <div class="container" style="padding-top:1.5rem;padding-bottom:3rem">
+
+    <h1 style="font-size:1.5rem;font-weight:700;margin-bottom:1rem">Barbearias</h1>
+
+    <!-- Search -->
+    <div class="search-bar mb-4" style="max-width:540px">
+      <span style="padding:0 0.25rem;color:var(--text-muted)">🔍</span>
+      <input type="text" id="searchInput" placeholder="Buscar barbearia, cidade…">
+      <button onclick="doSearch()">→</button>
+    </div>
+
+    <!-- Quick pills -->
+    <div class="pills mb-4" id="quickPills"></div>
+
+    <!-- Results count -->
+    <div id="resultsInfo" class="text-muted text-sm mb-3"></div>
+
+    <!-- Grid -->
+    <div class="barbershop-grid" id="shopGrid">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="emptyState" class="hidden" style="text-align:center;padding:4rem 1rem;border:1px dashed var(--border);border-radius:var(--radius);margin-top:1rem">
+      <p style="font-size:2rem">✂️</p>
+      <p style="font-weight:600;margin-top:0.5rem">Nenhuma barbearia encontrada</p>
+      <p class="text-muted text-sm mt-2">Tente outros termos de busca.</p>
+      <button class="btn btn-outline mt-4" onclick="clearSearch()">Limpar busca</button>
+    </div>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  <p>© <span id="yr"></span> Barberon · Todos os direitos reservados.</p>
+  <p><a href="about.html">Sobre nós</a> · <a href="pricing.html">Planos</a></p>
+</footer>
+
+<div id="toastContainer"></div>
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/app.js"></script>
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+const QUICK = [
+  { emoji:'✂️', label:'Cabelo',      q:'cabelo' },
+  { emoji:'🧔', label:'Barba',       q:'barba' },
+  { emoji:'👁', label:'Sobrancelha', q:'sobrancelha' },
+  { emoji:'💆', label:'Massagem',    q:'massagem' },
+  { emoji:'💧', label:'Hidratação',  q:'hidratação' },
+  { emoji:'✨', label:'Acabamento',  q:'acabamento' },
+];
+
+const searchQ = getParam('search') || '';
+if (searchQ) document.getElementById('searchInput').value = searchQ;
+
+// Quick pills
+document.getElementById('quickPills').innerHTML = QUICK.map(p =>
+  `<a class="pill${searchQ === p.q ? ' active':''}" href="?search=${encodeURIComponent(p.q)}">${p.emoji} ${p.label}</a>`
+).join('');
+
+let allShops = [];
+
+async function loadShops() {
+  try {
+    allShops = await api('/api/barbershops/list.php');
+    filterShops(searchQ);
+  } catch(e) {
+    document.getElementById('shopGrid').innerHTML = `<p class="text-muted text-sm">${e.message}</p>`;
+  }
+}
+
+function filterShops(q) {
+  const term = (q || '').toLowerCase().trim();
+  const filtered = term
+    ? allShops.filter(s =>
+        s.name.toLowerCase().includes(term) ||
+        (s.address||'').toLowerCase().includes(term) ||
+        (s.description||'').toLowerCase().includes(term)
+      )
+    : allShops;
+
+  const grid = document.getElementById('shopGrid');
+  const info = document.getElementById('resultsInfo');
+  const empty = document.getElementById('emptyState');
+
+  info.textContent = term
+    ? `${filtered.length} resultado${filtered.length !== 1 ? 's' : ''} para "${q}"`
+    : `${filtered.length} barbearia${filtered.length !== 1 ? 's' : ''} disponível${filtered.length !== 1 ? 'is' : ''}`;
+
+  if (!filtered.length) {
+    grid.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  grid.innerHTML = filtered.map(s => {
+    const href = s.slug ? `../b/${s.slug}.html` : `barbershop.html?id=${s.id}`;
+    return `
+    <div class="barbershop-card card">
+      <a href="${href}">
+        <img src="${s.imageUrl||'../img/logo.svg'}" alt="${escHtml(s.name)}" loading="lazy" onerror="this.src='../img/logo.svg'" style="height:180px;object-fit:cover;width:100%">
+        <div class="card-body">
+          <div class="card-title truncate">${escHtml(s.name)}</div>
+          <div class="card-sub truncate">📍 ${escHtml(s.address||'')}</div>
+          ${s.description ? `<div class="card-sub truncate mt-2" style="font-size:0.78rem">${escHtml(s.description)}</div>` : ''}
+          ${s.slug ? `<div class="mt-2"><span class="badge badge-primary" style="font-size:.65rem">🔗 /${s.slug}</span></div>` : ''}
+        </div>
+      </a>
+    </div>`;}).join('');
+}
+
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  const url = new URL(window.location.href);
+  if (q) url.searchParams.set('search', q);
+  else url.searchParams.delete('search');
+  window.history.replaceState({}, '', url);
+  filterShops(q);
+  // update pills
+  document.querySelectorAll('.pill').forEach(p => {
+    p.classList.toggle('active', p.href.includes('search=' + encodeURIComponent(q)));
+  });
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  window.history.replaceState({}, '', window.location.pathname);
+  filterShops('');
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+}
+
+document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+loadShops();
+</script>
+</body>
+</html>

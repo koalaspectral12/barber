@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barbearia — Barberon</title>
+  <link rel="icon" href="../img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="../index.html" class="brand">
+      <img src="../img/logo.svg" alt="Barberon" width="28" height="28"><span>Barberon</span>
+    </a>
+    <nav class="header-nav" id="headerNav"></nav>
+    <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu"></div>
+</header>
+
+<main class="main-content" id="pageContent">
+  <div style="text-align:center;padding:4rem 1rem">
+    <div class="spinner"></div>
+  </div>
+</main>
+
+<!-- Booking Modal -->
+<div class="modal-backdrop" id="bookingModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalServiceName"></div>
+        <div class="text-muted text-sm" id="modalServiceMeta"></div>
+      </div>
+      <button class="modal-close" onclick="closeBookingModal()">✕</button>
+    </div>
+    <!-- Step 1: Calendar -->
+    <div id="bkStep1">
+      <p class="text-sm font-semibold mb-3">Escolha a data</p>
+      <div id="bookingCalendar"></div>
+      <p class="text-xs text-muted mt-2" id="bkClosedNote" style="display:none">
+        ⚠️ Dias sem disponibilidade estão marcados. Selecione qualquer data futura disponível.
+      </p>
+    </div>
+    <!-- Step 2: Time slots -->
+    <div id="bkStep2" class="hidden">
+      <div class="flex items-center gap-2 mb-3">
+        <button class="btn btn-ghost btn-sm" onclick="bkBackToDate()">← Voltar</button>
+        <span class="text-sm font-semibold">Horários disponíveis em <span id="bkSelectedDate"></span></span>
+      </div>
+      <div id="bookingSlots"></div>
+    </div>
+    <!-- Step 3: Confirm -->
+    <div id="bkStep3" class="hidden">
+      <div class="flex items-center gap-2 mb-3">
+        <button class="btn btn-ghost btn-sm" onclick="bkBackToSlots()">← Voltar</button>
+        <span class="text-sm font-semibold">Confirmar agendamento</span>
+      </div>
+      <div class="bk-summary mb-4">
+        <div class="bk-summary-row"><span>Serviço</span><span id="bkSumService"></span></div>
+        <div class="bk-summary-row"><span>Data</span><span id="bkSumDate"></span></div>
+        <div class="bk-summary-row"><span>Horário</span><span id="bkSumTime"></span></div>
+        <div class="bk-summary-row"><span>Duração</span><span id="bkSumDuration"></span></div>
+        <div class="bk-summary-row"><span>Total</span><span id="bkSumPrice" style="color:var(--primary);font-weight:700"></span></div>
+      </div>
+      <div id="bkConfirmError" class="alert alert-danger hidden mb-3"></div>
+      <button class="btn btn-primary btn-block" id="bookingConfirmBtn" onclick="confirmBooking()">
+        Confirmar agendamento
+      </button>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <p>© <span id="yr"></span> Barberon · Todos os direitos reservados.</p>
+  <p><a href="about.html">Sobre nós</a> · <a href="pricing.html">Planos</a></p>
+</footer>
+
+<div id="toastContainer"></div>
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/app.js"></script>
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+// Get shop ID from URL — supports ?id=X and also slug redirect ?slug=X
+const shopId   = getParam('id');
+const shopSlug = getParam('slug');
+
+if (!shopId && !shopSlug) {
+  window.location.href = 'barbershops.html';
+}
+
+const DAYS_FULL = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const DAYS_SHORT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+// Open days set (day-of-week 0–6 that have hours configured)
+let _openDays = new Set();
+
+async function loadShop() {
+  const content = document.getElementById('pageContent');
+  try {
+    let shopData;
+
+    // If we have a slug instead of ID, resolve it first
+    if (shopSlug && !shopId) {
+      shopData = await api(`/api/barbershops/list.php?slug=${encodeURIComponent(shopSlug)}`);
+    } else {
+      // GET /api/barbershops/list.php?id=X returns shop with services and hours embedded
+      shopData = await api(`/api/barbershops/list.php?id=${shopId}`);
+    }
+
+    // Normalise — API may return array or object
+    const s = Array.isArray(shopData) ? shopData[0] : shopData;
+    if (!s) throw new Error('Barbearia não encontrada.');
+
+    document.title = `${s.name} — Barberon`;
+
+    // Services: already embedded in shop response as s.services
+    const services = s.services || [];
+
+    // Hours: already embedded as s.hours
+    const hours = s.hours || [];
+
+    // Build open-days set for calendar
+    _openDays.clear();
+    hours.forEach(h => { if (!h.closed) _openDays.add(Number(h.dayOfWeek)); });
+
+    // Build phones array
+    let phones = [];
+    try { phones = Array.isArray(s.phones) ? s.phones : JSON.parse(s.phones || '[]'); } catch {}
+    if (!Array.isArray(phones)) phones = [];
+
+    // Short link
+    const siteBase = (window.BARBERON_CONFIG?.SITE_BASE || '').replace(/\/$/,'');
+    const shopLink = s.slug
+      ? `<a href="${siteBase}/b/${s.slug}.html" class="badge badge-primary" title="Link amigável" style="cursor:pointer;text-decoration:none">🔗 ${window.location.hostname}${siteBase}/${s.slug}</a>`
+      : '';
+
+    // Build page HTML
+    content.innerHTML = `
+      <!-- Hero image -->
+      <div class="shop-hero">
+        <img src="${s.imageUrl || '../img/logo.svg'}" alt="${escHtml(s.name)}"
+             onerror="this.src='../img/logo.svg'" style="height:260px;object-fit:cover;width:100%">
+        <a href="barbershops.html" class="shop-back btn btn-outline btn-sm">← Voltar</a>
+      </div>
+
+      <!-- Info -->
+      <div class="shop-info container">
+        <h1>${escHtml(s.name)}</h1>
+        <p class="address">📍 ${escHtml(s.address || '')}</p>
+        ${phones.length ? `<div class="mt-2 flex gap-2" style="flex-wrap:wrap">
+          ${phones.map(p => `<a href="tel:${escHtml(p)}" class="badge">📞 ${escHtml(p)}</a>`).join('')}
+        </div>` : ''}
+        ${s.description ? `<p class="text-muted text-sm mt-2">${escHtml(s.description)}</p>` : ''}
+        ${shopLink ? `<div class="mt-2">${shopLink}</div>` : ''}
+      </div>
+
+      <!-- Hours -->
+      ${hours.length ? `
+      <div class="container mb-4">
+        <p class="section-title">🕐 Horários de funcionamento</p>
+        <div class="hours-grid">
+          ${DAYS_SHORT.map((dayName, idx) => {
+            const h = hours.find(h => Number(h.dayOfWeek) === idx);
+            const today = new Date().getDay();
+            const isToday = idx === today;
+            const isClosed = !h || h.closed;
+            return `<div class="hours-row${isToday ? ' today' : ''}">
+              <span class="font-semibold">${dayName}</span>
+              <span class="${isClosed ? 'text-muted' : ''}">${isClosed ? 'Fechado' : `${h.openTime}–${h.closeTime}`}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+
+      <!-- Services -->
+      <div class="container mb-4">
+        <p class="section-title">✂️ Serviços</p>
+        <div id="servicesWrap">
+          ${renderServices(services, s.id)}
+        </div>
+      </div>
+    `;
+
+    // Store barbershopId for booking flow
+    _bk.barbershopId = s.id;
+
+  } catch(e) {
+    content.innerHTML = `
+      <div class="container" style="padding:4rem 1rem;text-align:center">
+        <p style="font-size:2rem">✂️</p>
+        <p class="font-semibold mt-2">Barbearia não encontrada</p>
+        <p class="text-muted text-sm mt-1">${escHtml(e.message)}</p>
+        <a href="barbershops.html" class="btn btn-outline mt-4">Ver todas as barbearias</a>
+      </div>`;
+  }
+}
+
+function renderServices(svcs, barbershopId) {
+  if (!svcs.length) {
+    return `<div style="text-align:center;padding:2rem;border:1px dashed var(--border);border-radius:var(--radius)">
+      <p class="text-muted text-sm">Nenhum serviço cadastrado.</p>
+    </div>`;
+  }
+  const bsId = barbershopId || shopId || '';
+  return `<div class="services-list">` + svcs.map(svc => `
+    <div class="service-card">
+      <img src="${svc.imageUrl || '../img/logo.svg'}" alt="${escHtml(svc.name)}" loading="lazy" onerror="this.src='../img/logo.svg'">
+      <div class="svc-info">
+        <div class="svc-name">${escHtml(svc.name)}</div>
+        ${svc.description ? `<div class="svc-desc">${escHtml(svc.description)}</div>` : ''}
+        <div class="svc-price">${fmtPrice(svc.price)} <span class="svc-dur">${fmtDuration(svc.duration || '00:30')}</span></div>
+      </div>
+      <button class="btn btn-primary btn-sm book-btn"
+        onclick="openBookingModal('${escAttr(svc.id)}','${escAttr(svc.name)}','${escAttr(bsId)}','${svc.duration || '00:30'}',${parseFloat(svc.price) || 0})">
+        Reservar
+      </button>
+    </div>`).join('') + `</div>`;
+}
+
+// Safe attribute escaping (no quotes inside onclick string values)
+function escAttr(s) {
+  return String(s || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+loadShop();
+</script>
+</body>
+</html>

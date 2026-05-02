@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a1a1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Carregando…</title>
+  <link rel="icon" href="../img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link id="fontLink" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Base Reset ── */
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Inter',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;transition:background .3s,color .3s}
+    a{text-decoration:none}
+    img{max-width:100%;display:block}
+    button{cursor:pointer;font-family:inherit}
+    ul{list-style:none}
+
+    /* ── Layout ── */
+    .container{max-width:960px;margin:0 auto;padding:0 1rem}
+    .section{padding:2.5rem 0}
+
+    /* ── Header ── */
+    .app-header{
+      position:sticky;top:0;z-index:100;
+      padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;
+      backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    }
+    .app-logo{width:32px;height:32px;border-radius:8px;object-fit:cover}
+    .app-name{font-weight:700;font-size:1.05rem;flex:1}
+    .app-phone-btn{padding:.4rem .9rem;border-radius:999px;font-size:.82rem;font-weight:600;border:1.5px solid;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.35rem}
+
+    /* ── Preview banner ── */
+    .preview-banner{
+      background:rgba(245,158,11,.15);border-bottom:2px solid #f59e0b;
+      padding:.6rem 1rem;text-align:center;font-size:.82rem;font-weight:600;color:#f59e0b;
+    }
+
+    /* ── Hero ── */
+    .hero-section{
+      position:relative;min-height:320px;display:flex;align-items:center;justify-content:center;
+      background-size:cover;background-position:center;
+    }
+    .hero-overlay{
+      position:absolute;inset:0;
+      background:linear-gradient(to bottom,rgba(0,0,0,.5) 0%,rgba(0,0,0,.75) 100%);
+    }
+    .hero-content{position:relative;z-index:1;text-align:center;padding:3rem 1.5rem;color:#fff}
+    .hero-content h1{font-size:clamp(1.6rem,5vw,2.6rem);font-weight:800;text-shadow:0 2px 12px rgba(0,0,0,.6);margin-bottom:.5rem}
+    .hero-content p{font-size:1rem;opacity:.9;margin-bottom:1.5rem;text-shadow:0 1px 6px rgba(0,0,0,.5)}
+    .hero-btns{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap}
+    .btn-hero{
+      padding:.65rem 1.4rem;border-radius:999px;font-weight:700;font-size:.9rem;
+      border:2px solid rgba(255,255,255,.5);color:#fff;background:rgba(255,255,255,.15);
+      backdrop-filter:blur(6px);transition:background .15s;display:inline-flex;align-items:center;gap:.4rem;
+    }
+    .btn-hero:hover{background:rgba(255,255,255,.25)}
+    .btn-hero.primary{border-color:transparent}
+
+    /* ── Section title ── */
+    .section-title{font-size:1.15rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+
+    /* ── Carousel ── */
+    .carousel-wrap{position:relative;overflow:hidden;border-radius:1rem;margin-bottom:1.5rem}
+    .carousel-track{display:flex;transition:transform .4s ease}
+    .carousel-slide{min-width:100%}
+    .carousel-slide img{width:100%;height:240px;object-fit:cover}
+    .c-btn{
+      position:absolute;top:50%;transform:translateY(-50%);
+      background:rgba(0,0,0,.5);border:none;color:#fff;
+      width:38px;height:38px;border-radius:50%;font-size:1.1rem;
+      display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;
+    }
+    .c-btn.prev{left:.5rem}.c-btn.next{right:.5rem}
+    .c-dots{display:flex;justify-content:center;gap:6px;margin-top:.5rem}
+    .c-dot{width:8px;height:8px;border-radius:50%;border:none;cursor:pointer;transition:background .2s}
+
+    /* ── Services grid ── */
+    .services-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+    .svc-card{
+      border-radius:1rem;overflow:hidden;display:flex;gap:0;
+      transition:transform .15s,box-shadow .15s;
+    }
+    .svc-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.4)}
+    .svc-img{width:90px;height:90px;object-fit:cover;flex-shrink:0}
+    .svc-body{padding:.75rem;flex:1;display:flex;flex-direction:column;gap:.25rem}
+    .svc-name{font-weight:600;font-size:.95rem}
+    .svc-desc{font-size:.78rem;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .svc-meta{display:flex;align-items:center;gap:.5rem;margin-top:auto}
+    .svc-price{font-weight:700;font-size:.95rem}
+    .svc-dur{font-size:.75rem;opacity:.6}
+    .svc-btn{
+      display:block;width:100%;padding:.5rem;border-radius:.5rem;
+      font-weight:600;font-size:.82rem;border:none;cursor:pointer;
+      margin-top:.5rem;transition:opacity .15s;text-align:center;
+    }
+    .svc-btn:hover{opacity:.85}
+
+    /* ── Hours ── */
+    .hours-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.5rem}
+    .hours-item{border-radius:.65rem;padding:.6rem .85rem;display:flex;justify-content:space-between;align-items:center;font-size:.85rem}
+    .hours-item.today{outline:2px solid}
+    .hours-day{font-weight:600}
+    .hours-time{opacity:.7;font-size:.8rem}
+
+    /* ── Location ── */
+    .location-card{border-radius:1rem;overflow:hidden}
+    .location-map{height:200px;background-size:cover;background-position:center;display:flex;align-items:flex-end}
+    .location-info{padding:1rem}
+    .location-addr{font-size:.9rem;opacity:.8}
+    .location-btn{display:inline-flex;align-items:center;gap:.5rem;margin-top:.75rem;padding:.5rem 1rem;border-radius:999px;font-size:.82rem;font-weight:600;border:none;cursor:pointer}
+
+    /* ── Social buttons ── */
+    .social-btns{display:flex;gap:.75rem;flex-wrap:wrap}
+    .social-btn{
+      flex:1;min-width:140px;padding:.7rem 1rem;border-radius:1rem;
+      font-weight:600;font-size:.9rem;border:none;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;gap:.5rem;
+      text-decoration:none;transition:opacity .15s;
+    }
+    .social-btn:hover{opacity:.85}
+    .wa-btn{background:#25D366;color:#fff}
+    .ig-btn{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:#fff}
+
+    /* ── Booking Modal ── */
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,.75);
+      display:flex;align-items:flex-end;justify-content:center;
+      z-index:200;opacity:0;pointer-events:none;transition:opacity .2s;
+    }
+    .modal-backdrop.open{opacity:1;pointer-events:all}
+    .modal{
+      width:100%;max-width:500px;max-height:90vh;overflow-y:auto;
+      border-radius:1.25rem 1.25rem 0 0;padding:1.25rem 1rem 2rem;
+      transform:translateY(100%);transition:transform .3s;
+    }
+    .modal-backdrop.open .modal{transform:translateY(0)}
+    .modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem}
+    .modal-title{font-weight:700;font-size:1rem}
+    .modal-close{background:none;border:none;font-size:1.2rem;cursor:pointer;padding:0;opacity:.6}
+
+    /* Steps */
+    .bk-step{display:none}.bk-step.active{display:block}
+    .slot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:.25rem}
+    .slot-btn{
+      padding:.5rem;border-radius:.5rem;font-size:.82rem;text-align:center;
+      cursor:pointer;transition:background .15s,border-color .15s;
+      border:1.5px solid;background:transparent;
+    }
+    .slot-btn:disabled,.slot-btn.booked{opacity:.35;cursor:not-allowed}
+    .empty-slots{padding:1.5rem;text-align:center;font-size:.875rem;opacity:.6}
+    .bk-summary{border-radius:.75rem;overflow:hidden;margin-bottom:.75rem}
+    .bk-summary-row{display:flex;justify-content:space-between;align-items:center;padding:.6rem .85rem;font-size:.875rem}
+    .bk-summary-row span{opacity:.6;font-weight:400}
+    .bk-summary-row:last-child{font-weight:700}
+
+    /* Calendar */
+    .calendar{user-select:none}
+    .cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+    .cal-day-name{font-size:.7rem;opacity:.5;padding:.25rem}
+    .cal-day{padding:.4rem 0;border-radius:.5rem;font-size:.85rem;border:1.5px solid transparent;cursor:pointer;transition:background .1s}
+    .cal-day.today{border-color:inherit}
+    .cal-day.disabled{opacity:.3;cursor:not-allowed}
+    .cal-day.empty{pointer-events:none}
+
+    /* Auth redirect */
+    .auth-notice{text-align:center;padding:1.5rem;border-radius:.75rem;margin-bottom:.75rem}
+
+    /* Alerts */
+    .alert{padding:.75rem 1rem;border-radius:.5rem;font-size:.875rem;margin-bottom:.75rem}
+    .alert-danger{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
+    .alert-success{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac}
+
+    /* Spinner */
+    .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.2);border-radius:50%;animation:spin .7s linear infinite;margin:2rem auto}
+    .spinner-sm{width:18px;height:18px;border-width:2px;margin:0}
+    .spinner-top{border-top-color:inherit}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Toast */
+    #toastContainer{position:fixed;bottom:1.5rem;right:1rem;display:flex;flex-direction:column;gap:.5rem;z-index:9999}
+    .toast{padding:.75rem 1.25rem;border-radius:.75rem;font-size:.875rem;max-width:320px;animation:toastIn .25s ease}
+    .toast.error{background:rgba(239,68,68,.9);color:#fff}
+    .toast.success{background:rgba(34,197,94,.9);color:#fff}
+    .toast.info{background:rgba(59,130,246,.9);color:#fff}
+    @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Util */
+    .hidden{display:none!important}
+    .btn-back{background:none;border:none;font-size:.875rem;cursor:pointer;display:flex;align-items:center;gap:.35rem;opacity:.7;padding:.25rem 0;margin-bottom:.75rem}
+    .btn-back:hover{opacity:1}
+  </style>
+</head>
+<body>
+
+<div id="appRoot" style="min-height:100vh;display:flex;align-items:center;justify-content:center">
+  <div style="text-align:center;padding:2rem">
+    <div class="spinner" style="border-top-color:#f59e0b;margin:0 auto 1rem"></div>
+    <p style="opacity:.6;font-size:.9rem">Carregando…</p>
+  </div>
+</div>
+
+<!-- Booking Modal -->
+<div class="modal-backdrop" id="bookingModal">
+  <div class="modal" id="bookingModalInner">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalServiceName"></div>
+        <div id="modalServiceMeta" style="font-size:.82rem;opacity:.6;margin-top:.15rem"></div>
+      </div>
+      <button class="modal-close" id="modalCloseBtn" onclick="closeBkModal()">✕</button>
+    </div>
+    <!-- Step 1: Calendar -->
+    <div class="bk-step active" id="bkS1">
+      <p style="font-size:.875rem;font-weight:600;margin-bottom:.75rem">Escolha a data</p>
+      <div id="bkCalendar"></div>
+    </div>
+    <!-- Step 2: Slots -->
+    <div class="bk-step" id="bkS2">
+      <button class="btn-back" onclick="bkStep(1)">← Voltar</button>
+      <p style="font-weight:600;font-size:.875rem;margin-bottom:.75rem">Horários para <span id="bkDateLabel"></span></p>
+      <div id="bkSlots"></div>
+    </div>
+    <!-- Step 3: Confirm -->
+    <div class="bk-step" id="bkS3">
+      <button class="btn-back" onclick="bkStep(2)">← Voltar</button>
+      <p style="font-weight:600;font-size:.875rem;margin-bottom:.75rem">Confirmar agendamento</p>
+      <div class="bk-summary" id="bkSummaryCard"></div>
+      <div id="bkConfirmErr" class="alert alert-danger hidden"></div>
+      <button class="svc-btn" id="bkConfirmBtn" onclick="confirmBk()" style="font-size:.9rem;padding:.7rem">
+        Confirmar agendamento
+      </button>
+    </div>
+    <!-- Step 4: Login required -->
+    <div class="bk-step" id="bkS4">
+      <div class="auth-notice" id="authNotice">
+        <p style="font-size:1.5rem;margin-bottom:.5rem">🔒</p>
+        <p style="font-weight:600;margin-bottom:.35rem">Faça login para agendar</p>
+        <p style="opacity:.6;font-size:.85rem;margin-bottom:1rem">Crie uma conta ou entre na sua conta Barberon.</p>
+        <a id="authLoginBtn" href="#" style="display:inline-block;padding:.6rem 1.5rem;border-radius:999px;font-weight:700;font-size:.9rem;color:#000;text-decoration:none">Entrar / Criar conta</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script src="../js/config.js"></script>
+<script src="../js/api.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   Barberon — Standalone Barbershop App Page
+   ══════════════════════════════════════════════════════════════ */
+
+const shopId  = new URLSearchParams(location.search).get('id');
+const preview = new URLSearchParams(location.search).get('preview') === '1';
+
+if (!shopId) { document.getElementById('appRoot').innerHTML='<div style="text-align:center;padding:4rem 1rem;opacity:.6">ID da barbearia não informado.</div>'; }
+
+// ── Theme ──────────────────────────────────────────────────────
+let _theme = {
+  accentColor:  '#f59e0b',
+  bgColor:      '#1a1a1a',
+  cardColor:    '#242424',
+  textColor:    '#e4e4e7',
+  borderColor:  '#333',
+  fontFamily:   'Inter',
+};
+
+function applyTheme(t) {
+  Object.assign(_theme, t);
+  const r = document.documentElement.style;
+  r.setProperty('--accent',  _theme.accentColor);
+  r.setProperty('--bg',      _theme.bgColor);
+  r.setProperty('--card',    _theme.cardColor);
+  r.setProperty('--text',    _theme.textColor);
+  r.setProperty('--border',  _theme.borderColor || '#333');
+  document.body.style.background = _theme.bgColor;
+  document.body.style.color      = _theme.textColor;
+  // Font
+  const font = _theme.fontFamily || 'Inter';
+  document.body.style.fontFamily = `'${font}', system-ui, sans-serif`;
+  const fl = document.getElementById('fontLink');
+  if (fl && font !== 'Inter') {
+    fl.href = `https://fonts.googleapis.com/css2?family=${font.replace(/ /g,'+')}:wght@400;500;600;700&display=swap`;
+  }
+  // Modal inner
+  const mi = document.getElementById('bookingModalInner');
+  if (mi) { mi.style.background = _theme.cardColor; mi.style.color = _theme.textColor; }
+  // Custom CSS
+  if (_theme.customCss) {
+    let el = document.getElementById('customCssEl');
+    if (!el) { el = document.createElement('style'); el.id='customCssEl'; document.head.appendChild(el); }
+    el.textContent = _theme.customCss;
+  }
+}
+
+// ── Helpers ────────────────────────────────────────────────────
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtP(v){ return 'R$ '+Number(v||0).toFixed(2).replace('.',','); }
+function fmtD(hhmm){
+  if(!hhmm||hhmm==='00:00') return '';
+  const [h,m]=hhmm.split(':').map(Number);
+  if(h===0) return m+' min';
+  if(m===0) return h+'h';
+  return h+'h '+m+'min';
+}
+function fmtDateShort(iso){
+  if(!iso) return '';
+  return new Date(iso).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+}
+function datePtBr(s){
+  if(!s) return '';
+  const mo=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const [y,m,d]=s.split('-');
+  return `${d} de ${mo[parseInt(m)-1]} de ${y}`;
+}
+function showToast(msg,type='info'){
+  const c=document.getElementById('toastContainer');
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;t.textContent=msg;
+  c.appendChild(t);setTimeout(()=>t.remove(),3500);
+}
+
+// ── Main loader ────────────────────────────────────────────────
+async function loadApp() {
+  if (!shopId) return;
+  const root = document.getElementById('appRoot');
+  try {
+    const [shopArr, pbCfg] = await Promise.all([
+      fetch(API_BASE + `/api/barbershops/list.php?id=${shopId}`).then(r=>r.json()).catch(()=>[]),
+      fetch(API_BASE + `/api/admin/page-builder.php?barbershopId=${shopId}`).then(r=>r.json()).catch(()=>({})),
+    ]);
+
+    const shop = Array.isArray(shopArr) ? shopArr[0] : shopArr;
+    if (!shop) { root.innerHTML='<div style="text-align:center;padding:4rem 1rem;opacity:.6">Barbearia não encontrada.</div>'; return; }
+
+    // Apply theme from page builder config
+    if (pbCfg && pbCfg.accentColor) applyTheme(pbCfg);
+    else applyTheme({});
+
+    // Exclusive app — override name/logo
+    const appName   = (pbCfg.appName && pbCfg.appName.trim()) || shop.name;
+    const appLogo   = pbCfg.appLogo || shop.imageUrl || ROOT+'/img/logo.svg';
+    const exclusive = !!(pbCfg.appName && pbCfg.appName.trim());
+
+    document.title = appName;
+    // Update theme-color
+    document.querySelector('meta[name="theme-color"]').content = _theme.bgColor;
+
+    // PWA icon
+    if (pbCfg.appIcon) {
+      let li = document.querySelector('link[rel="apple-touch-icon"]');
+      if (!li){ li=document.createElement('link'); li.rel='apple-touch-icon'; document.head.appendChild(li); }
+      li.href = pbCfg.appIcon;
+    }
+
+    // Load services + hours
+    const [svcs, hours] = await Promise.all([
+      fetch(API_BASE + `/api/admin/services.php?barbershopId=${shopId}`).then(r=>r.json()).catch(()=>[]),
+      fetch(API_BASE + `/api/barbershops/hours.php?barbershopId=${shopId}`).then(r=>r.json()).catch(()=>[]),
+    ]);
+
+    let phones = [];
+    try { phones = JSON.parse(shop.phones||'[]'); } catch {}
+    if (!Array.isArray(phones)) phones = [];
+
+    const modules   = Array.isArray(pbCfg.modules) && pbCfg.modules.length ? pbCfg.modules : ['hero','services','carousel','hours','location','whatsapp'];
+    const carousel  = Array.isArray(pbCfg.carousel) ? pbCfg.carousel : [];
+
+    // ── Build page ──────────────────────────────────────────────
+    let html = '';
+
+    // Preview banner
+    if (preview) {
+      html += `<div class="preview-banner">👁 Modo de pré-visualização — <a href="?id=${shopId}" style="color:#f59e0b;text-decoration:underline">Ver versão final</a></div>`;
+    }
+
+    // Header
+    html += `<header class="app-header" style="background:${_theme.bgColor}cc;border-bottom:1px solid ${_theme.borderColor||'#333'}">
+      <img src="${esc(appLogo)}" alt="${esc(appName)}" class="app-logo" onerror="this.src='${ROOT}/img/logo.svg'">
+      <span class="app-name">${esc(appName)}</span>
+      ${phones[0]?`<a href="tel:${esc(phones[0])}" class="app-phone-btn" style="border-color:${_theme.accentColor};color:${_theme.accentColor}">📞 Ligar</a>`:''}
+    </header>`;
+
+    // Modules loop
+    modules.forEach(mod => {
+      switch(mod) {
+        case 'hero':
+          html += buildHero(shop, pbCfg, appName, phones);
+          break;
+        case 'carousel':
+          if (carousel.length) html += buildCarousel(carousel);
+          break;
+        case 'services':
+          html += buildServices(svcs);
+          break;
+        case 'hours':
+          if (hours.length) html += buildHours(hours);
+          break;
+        case 'location':
+          if (shop.address) html += buildLocation(shop);
+          break;
+        case 'whatsapp':
+          if (pbCfg.whatsapp) html += buildWhatsApp(pbCfg.whatsapp, pbCfg.instagram);
+          break;
+        case 'instagram':
+          if (pbCfg.instagram && !modules.includes('whatsapp')) html += buildInstagram(pbCfg.instagram);
+          break;
+      }
+    });
+
+    // Footer
+    if (!exclusive) {
+      html += `<footer style="text-align:center;padding:1.5rem 1rem;font-size:.8rem;opacity:.45;border-top:1px solid ${_theme.borderColor||'#333'}">
+        Agendamentos por <a href="${ROOT}/index.html" style="color:${_theme.accentColor}">Barberon</a>
+      </footer>`;
+    }
+
+    root.innerHTML = html;
+
+    // Init carousels
+    document.querySelectorAll('.carousel-wrap').forEach(initCarousel);
+
+  } catch(e) {
+    root.innerHTML = `<div style="text-align:center;padding:4rem 1rem"><p style="opacity:.6">${esc(e.message)}</p><a href="${ROOT}/pages/barbershops.html" style="color:${_theme.accentColor};display:block;margin-top:1rem">← Ver todas as barbearias</a></div>`;
+  }
+}
+
+// ── Section builders ───────────────────────────────────────────
+function buildHero(shop, cfg, appName, phones) {
+  const title    = cfg.heroTitle    || appName;
+  const subtitle = cfg.heroSubtitle || shop.description || '';
+  const bgImg    = cfg.heroImage    || shop.imageUrl     || '';
+  const bg       = bgImg ? `background-image:url('${esc(bgImg)}')` : `background:${_theme.cardColor}`;
+  const waBtns   = phones.map(p=>`<a href="tel:${esc(p)}" class="btn-hero">${p}</a>`).join('');
+  const cta      = `<a href="#services" class="btn-hero primary" style="background:${_theme.accentColor};color:#000;border-color:${_theme.accentColor}">📅 Agendar</a>`;
+  return `<div class="hero-section" style="${bg}">
+    ${bgImg?'<div class="hero-overlay"></div>':''}
+    <div class="hero-content" ${!bgImg?`style="color:${_theme.textColor}"`:''}>
+      <h1>${esc(title)}</h1>
+      ${subtitle?`<p>${esc(subtitle)}</p>`:''}
+      <div class="hero-btns">${cta}${waBtns}</div>
+    </div>
+  </div>`;
+}
+
+function buildCarousel(imgs) {
+  const slides = imgs.map(url=>`<div class="carousel-slide"><img src="${esc(url)}" loading="lazy" onerror="this.style.display='none'" alt=""></div>`).join('');
+  return `<div class="container" style="padding-top:1.5rem">
+    <div class="carousel-wrap">
+      <div class="carousel-track">${slides}</div>
+      ${imgs.length>1?'<button class="c-btn prev" onclick="prevSlide(this)">‹</button><button class="c-btn next" onclick="nextSlide(this)">›</button>':''}
+      <div class="c-dots"></div>
+    </div>
+  </div>`;
+}
+
+function buildServices(svcs) {
+  if (!svcs||!svcs.length) return '';
+  const cards = svcs.map(s=>`
+    <div class="svc-card" style="background:${_theme.cardColor};border:1px solid ${_theme.borderColor||'#333'}">
+      <img src="${esc(s.imageUrl||ROOT+'/img/logo.svg')}" class="svc-img" onerror="this.src='${ROOT}/img/logo.svg'" alt="${esc(s.name)}">
+      <div class="svc-body">
+        <div class="svc-name">${esc(s.name)}</div>
+        ${s.description?`<div class="svc-desc">${esc(s.description)}</div>`:''}
+        <div class="svc-meta">
+          <span class="svc-price" style="color:${_theme.accentColor}">${fmtP(s.price)}</span>
+          <span class="svc-dur">${fmtD(s.duration)}</span>
+        </div>
+        <button class="svc-btn" style="background:${_theme.accentColor};color:#000"
+          onclick="openBkModal('${esc(s.id)}','${esc(s.name).replace(/'/g,"\\'")}','${s.duration||'00:30'}',${parseFloat(s.price)||0})">
+          Reservar
+        </button>
+      </div>
+    </div>`).join('');
+  return `<div class="section container" id="services">
+    <div class="section-title" style="color:${_theme.textColor}">✂️ Serviços</div>
+    <div class="services-grid">${cards}</div>
+  </div>`;
+}
+
+function buildHours(hours) {
+  const DAYS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const today = new Date().getDay();
+  const items = hours.map(h=>`
+    <div class="hours-item${h.dayOfWeek===today?' today':''}" style="background:${_theme.cardColor};border:1px solid ${h.dayOfWeek===today?_theme.accentColor:'#333'};${h.dayOfWeek===today?'outline-color:'+_theme.accentColor:''}">
+      <span class="hours-day" style="${h.dayOfWeek===today?'color:'+_theme.accentColor:''}">${DAYS[h.dayOfWeek]||h.dayOfWeek}</span>
+      <span class="hours-time">${h.closed?'Fechado':h.openTime+'–'+h.closeTime}</span>
+    </div>`).join('');
+  return `<div class="section container">
+    <div class="section-title">🕐 Funcionamento</div>
+    <div class="hours-list">${items}</div>
+  </div>`;
+}
+
+function buildLocation(shop) {
+  const q = encodeURIComponent(shop.address);
+  return `<div class="section container">
+    <div class="section-title">📍 Localização</div>
+    <div class="location-card" style="background:${_theme.cardColor};border:1px solid ${_theme.borderColor||'#333'}">
+      <div class="location-map" style="background:${_theme.cardColor};background-image:url('https://maps.googleapis.com/maps/api/staticmap?center=${q}&zoom=15&size=960x200&maptype=roadmap&markers=color:red|${q}&key=PLACEHOLDER');height:160px">
+        <div style="background:rgba(0,0,0,.5);width:100%;padding:.5rem .85rem;color:#fff;font-size:.82rem">${esc(shop.address)}</div>
+      </div>
+      <div class="location-info">
+        <div class="location-addr">${esc(shop.address)}</div>
+        <a href="https://maps.google.com/?q=${q}" target="_blank" class="location-btn" style="background:${_theme.accentColor};color:#000">
+          🗺 Abrir no Google Maps
+        </a>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildWhatsApp(wa, ig) {
+  let btns = '';
+  if (wa) btns += `<a href="https://wa.me/${wa.replace(/\D/g,'')}" target="_blank" rel="noopener" class="social-btn wa-btn">💬 WhatsApp</a>`;
+  if (ig) btns += `<a href="https://instagram.com/${ig.replace('@','')}" target="_blank" rel="noopener" class="social-btn ig-btn">📸 Instagram</a>`;
+  if (!btns) return '';
+  return `<div class="section container"><div class="social-btns">${btns}</div></div>`;
+}
+function buildInstagram(ig) {
+  return `<div class="section container">
+    <a href="https://instagram.com/${ig.replace('@','')}" target="_blank" rel="noopener" class="social-btn ig-btn">📸 Instagram</a>
+  </div>`;
+}
+
+// ── Carousel ────────────────────────────────────────────────────
+function initCarousel(wrap) {
+  const track  = wrap.querySelector('.carousel-track');
+  const slides = wrap.querySelectorAll('.carousel-slide');
+  const dotsEl = wrap.querySelector('.c-dots');
+  if (!track || slides.length < 2) return;
+  let cur = 0;
+  const dots = [];
+  slides.forEach((_,i) => {
+    const d = document.createElement('button');
+    d.className = 'c-dot';
+    d.style.background = i===0 ? _theme.accentColor : '#555';
+    d.onclick = () => goC(i);
+    dotsEl?.appendChild(d);
+    dots.push(d);
+  });
+  function goC(n) {
+    cur = (n + slides.length) % slides.length;
+    track.style.transform = `translateX(-${cur*100}%)`;
+    dots.forEach((d,i) => d.style.background = i===cur ? _theme.accentColor : '#555');
+  }
+  wrap.querySelector('.c-btn.prev')?.addEventListener('click', ()=>goC(cur-1));
+  wrap.querySelector('.c-btn.next')?.addEventListener('click', ()=>goC(cur+1));
+  setInterval(()=>goC(cur+1), 4500);
+}
+function prevSlide(btn){const w=btn.closest('.carousel-wrap');w.__go&&w.__go(-1);}
+function nextSlide(btn){const w=btn.closest('.carousel-wrap');w.__go&&w.__go(1);}
+
+// ── Booking flow ────────────────────────────────────────────────
+const _bk = { serviceId:null, serviceName:'', duration:'00:30', price:0, date:null, time:null };
+
+function openBkModal(sid, sname, dur, price) {
+  const user = Auth.getUser();
+  if (!Auth.isLoggedIn()) {
+    bkStep(4);
+    const btn = document.getElementById('authLoginBtn');
+    btn.href   = ROOT + `/pages/login.html?cb=${encodeURIComponent(window.location.href)}`;
+    btn.style.background = _theme.accentColor;
+    document.getElementById('authNotice').style.background = _theme.cardColor;
+    document.getElementById('bookingModal').classList.add('open');
+    return;
+  }
+  Object.assign(_bk, { serviceId:sid, serviceName:sname, duration:dur, price, date:null, time:null });
+  document.getElementById('modalServiceName').textContent = sname;
+  document.getElementById('modalServiceMeta').textContent = [fmtD(dur), fmtP(price)].filter(Boolean).join(' · ');
+  bkStep(1);
+  buildCal('bkCalendar', date => {
+    _bk.date = date;
+    document.getElementById('bkDateLabel').textContent = datePtBr(date);
+    bkStep(2);
+    loadSlots(date);
+  });
+  const mi = document.getElementById('bookingModalInner');
+  mi.style.background = _theme.cardColor;
+  mi.style.color       = _theme.textColor;
+  document.getElementById('bookingModal').classList.add('open');
+}
+
+function closeBkModal() { document.getElementById('bookingModal').classList.remove('open'); }
+
+function bkStep(n) {
+  [1,2,3,4].forEach(i => {
+    const el = document.getElementById('bkS'+i);
+    if (el) el.classList.toggle('active', i===n);
+  });
+}
+
+async function loadSlots(date) {
+  const wrap = document.getElementById('bkSlots');
+  wrap.innerHTML = `<div class="spinner spinner-sm spinner-top" style="border-top-color:${_theme.accentColor};margin:1rem auto"></div>`;
+  try {
+    const data = await fetch(`${API_BASE}/api/barbershops/hours.php?barbershopId=${shopId}&date=${date}&serviceId=${_bk.serviceId}`,{headers:{'Authorization':'Bearer '+(Auth.getToken()||'')}}).then(r=>r.json());
+    if (!data.slots?.length || !data.slots.some(s=>s.available)) {
+      wrap.innerHTML=`<div class="empty-slots">Nenhum horário disponível. Tente outra data.</div>`;return;
+    }
+    wrap.innerHTML='<div class="slot-grid"></div>';
+    const grid=wrap.querySelector('.slot-grid');
+    data.slots.forEach(s=>{
+      const btn=document.createElement('button');
+      btn.className='slot-btn'+(s.available?'':' booked');
+      btn.textContent=s.time;
+      btn.style.borderColor=s.available?_theme.borderColor||'#333':'#333';
+      btn.style.color=_theme.textColor;
+      btn.disabled=!s.available;
+      btn.addEventListener('click',()=>{
+        grid.querySelectorAll('.slot-btn').forEach(b=>{b.style.background='';b.style.color=_theme.textColor;b.style.borderColor=_theme.borderColor||'#333';});
+        btn.style.background=_theme.accentColor;btn.style.color='#000';btn.style.borderColor=_theme.accentColor;
+        _bk.time=s.time;fillSummary();bkStep(3);
+      });
+      grid.appendChild(btn);
+    });
+  } catch(e){ wrap.innerHTML=`<div class="empty-slots" style="color:#fca5a5">${esc(e.message)}</div>`; }
+}
+
+function fillSummary() {
+  const rows = [
+    ['Serviço',  _bk.serviceName],
+    ['Data',     datePtBr(_bk.date)],
+    ['Horário',  _bk.time],
+    ['Duração',  fmtD(_bk.duration)],
+    ['Total',    fmtP(_bk.price)],
+  ];
+  const card = document.getElementById('bkSummaryCard');
+  card.style.border = `1px solid ${_theme.borderColor||'#333'}`;
+  card.innerHTML = rows.map((r,i)=>`
+    <div class="bk-summary-row" style="border-bottom:${i<rows.length-1?'1px solid '+(_theme.borderColor||'#333'):'none'};${i===rows.length-1?'color:'+_theme.accentColor:''}">
+      <span style="color:${_theme.textColor};opacity:.6">${r[0]}</span>${esc(r[1]||'')}
+    </div>`).join('');
+  const btn=document.getElementById('bkConfirmBtn');
+  btn.style.background=_theme.accentColor;btn.style.color='#000';
+  btn.disabled=false;btn.textContent='Confirmar agendamento';
+  document.getElementById('bkConfirmErr').classList.add('hidden');
+}
+
+async function confirmBk() {
+  if (!_bk.date||!_bk.time) return;
+  const btn=document.getElementById('bkConfirmBtn');
+  const errEl=document.getElementById('bkConfirmErr');
+  btn.disabled=true;btn.textContent='Agendando…';errEl.classList.add('hidden');
+  try {
+    await fetch(`${API_BASE}/api/bookings/index.php`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+(Auth.getToken()||'')},
+      body:JSON.stringify({serviceId:_bk.serviceId,date:`${_bk.date} ${_bk.time}:00`}),
+    }).then(async r=>{const d=await r.json();if(!r.ok) throw new Error(d.error||d.message||'Erro');return d;});
+    closeBkModal();
+    showToast('✅ Agendamento realizado!','success');
+  } catch(e){
+    errEl.textContent=e.message;errEl.classList.remove('hidden');
+    btn.disabled=false;btn.textContent='Confirmar agendamento';
+  }
+}
+
+// ── Calendar ────────────────────────────────────────────────────
+function buildCal(containerId, onSelect) {
+  const c=document.getElementById(containerId);
+  if(!c) return;
+  const today=new Date();today.setHours(0,0,0,0);
+  let vy=today.getFullYear(),vm=today.getMonth(),sel=null;
+  const MO=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  function render(){
+    const fd=new Date(vy,vm,1).getDay(),dm=new Date(vy,vm+1,0).getDate();
+    let h=`<div class="calendar"><div class="cal-header">
+      <button style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:${_theme.textColor}" id="cprev">‹</button>
+      <span style="font-weight:600;font-size:.95rem">${MO[vm]} ${vy}</span>
+      <button style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:${_theme.textColor}" id="cnext">›</button>
+    </div><div class="cal-grid">`;
+    ['D','S','T','Q','Q','S','S'].forEach(d=>{h+=`<div class="cal-day-name">${d}</div>`;});
+    for(let i=0;i<fd;i++) h+=`<div class="cal-day empty"></div>`;
+    for(let d=1;d<=dm;d++){
+      const dt=new Date(vy,vm,d);
+      const iso=`${vy}-${String(vm+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      let cls='cal-day';
+      if(dt<today) cls+=' disabled';
+      if(dt.getTime()===today.getTime()) cls+=` today`;
+      if(sel===iso) cls+=` selected`;
+      const style=dt.getTime()===today.getTime()?`border-color:${_theme.accentColor}`:'';
+      const selStyle=sel===iso?`background:${_theme.accentColor};color:#000`:'';
+      h+=`<div class="${cls}" data-date="${iso}" style="${style};${selStyle}">${d}</div>`;
+    }
+    h+='</div></div>';
+    c.innerHTML=h;
+    c.querySelector('#cprev')?.addEventListener('click',()=>{vm--;if(vm<0){vm=11;vy--;}render();});
+    c.querySelector('#cnext')?.addEventListener('click',()=>{vm++;if(vm>11){vm=0;vy++;}render();});
+    c.querySelectorAll('.cal-day:not(.disabled):not(.empty)').forEach(el=>{
+      el.style.cursor='pointer';
+      el.addEventListener('click',()=>{sel=el.dataset.date;render();onSelect(sel);});
+    });
+  }
+  render();
+}
+
+// API_BASE and ROOT are already declared in api.js (loaded above)
+loadApp();
+</script>
+</body>
+</html>

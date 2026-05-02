@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecionando…</title>
+  <link rel="icon" href="../img/logo.svg" type="image/svg+xml">
+  <script src="../js/config.js"></script>
+  <style>
+    body {
+      background: #1a1a1a; color: #e4e4e7;
+      font-family: 'Inter', system-ui, sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; margin: 0; text-align: center;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #333; border-top-color: #f59e0b;
+      border-radius: 50%; animation: spin .7s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    a { color: #f59e0b; }
+  </style>
+</head>
+<body>
+<div>
+  <div class="spinner"></div>
+  <p id="msg">Carregando barbearia…</p>
+  <p style="font-size:.8rem;color:#a1a1aa;margin-top:.5rem">
+    <a href="../pages/barbershops.html">Ver todas as barbearias</a>
+  </p>
+</div>
+<script>
+(async function () {
+  // Extract slug from filename: /b/luiz.html → "luiz"
+  const path  = window.location.pathname;          // e.g. /barber/b/luiz.html
+  const file  = path.split('/').pop() || '';        // luiz.html
+  const slug  = file.replace(/\.html$/i, '');       // luiz
+
+  const API_BASE = window.BARBERON_CONFIG?.API_BASE || '';
+  const ROOT     = (window.BARBERON_CONFIG?.SITE_BASE || '').replace(/\/$/, '');
+  const msgEl    = document.getElementById('msg');
+
+  if (!slug) {
+    window.location.replace(ROOT + '/pages/barbershops.html');
+    return;
+  }
+
+  try {
+    const res = await fetch(API_BASE + '/api/barbershops/list.php?slug=' + encodeURIComponent(slug));
+    if (!res.ok) throw new Error('Barbearia não encontrada');
+    const data = await res.json();
+    const shop = Array.isArray(data) ? data[0] : data;
+    if (!shop || !shop.id) throw new Error('Barbearia não encontrada');
+
+    // Set page title before redirecting
+    document.title = shop.name + ' — Barberon';
+    msgEl.textContent = 'Abrindo ' + shop.name + '…';
+
+    // Redirect to the real barbershop page, keeping the back-navigation intact
+    window.location.replace(ROOT + '/pages/barbershop.html?id=' + encodeURIComponent(shop.id));
+  } catch (err) {
+    msgEl.innerHTML =
+      '<strong>Barbearia não encontrada</strong><br>' +
+      '<span style="font-size:.85rem;color:#a1a1aa">' + err.message + '</span>';
+  }
+}());
+</script>
+</body>
+</html>
