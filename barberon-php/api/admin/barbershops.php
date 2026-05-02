@@ -92,10 +92,12 @@ if ($method === 'POST') {
 
 // ── PUT (update) ──────────────────────────────────────────────────────────────
 if ($method === 'PUT') {
+    // Accept id from query string (?id=xxx) OR from request body {"id":"xxx"}
+    $body = request_body();                    // read once — php://input is consumed
+    if (!$id) $id = $body['id'] ?? null;
     if (!$id) json_error('id é obrigatório', 400);
     if ($ctx['role'] === 'ADMIN' && $ctx['barbershopId'] !== $id) json_error('Acesso negado', 403);
 
-    $body   = request_body();
     $fields = [];
     $vals   = [];
 

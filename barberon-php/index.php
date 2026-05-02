@@ -50,6 +50,9 @@ function strftime_compat(\DateTime $dt): string {
     return $days[$d] . ', ' . $dt->format('d') . ' de ' . $months[$m];
 }
 
+// Make $base available globally in this file (layout_start defines it only in its own scope)
+$base = defined('BASE_URL') ? BASE_URL : '';
+
 layout_start($appName);
 ?>
 

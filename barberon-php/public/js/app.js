@@ -242,16 +242,19 @@ async function _bkLoadSlots(date) {
     );
 
     if (!data.slots || data.slots.length === 0) {
-      slotEl.innerHTML = `<div class="empty-slots">
-        <p class="text-muted text-sm text-center">${data.message || 'Nenhum horário disponível neste dia'}</p>
+      const msg = data.message || 'Nenhum horário disponível neste dia.';
+      slotEl.innerHTML = `<div class="empty-slots" style="text-align:center;padding:1rem">
+        <p class="text-muted" style="margin-bottom:.75rem">${msg}</p>
+        <button class="btn btn-ghost btn-sm" onclick="bkBackToDate()">← Escolher outra data</button>
       </div>`;
       return;
     }
 
     const hasAvailable = data.slots.some(s => s.available);
     if (!hasAvailable) {
-      slotEl.innerHTML = `<div class="empty-slots">
-        <p class="text-muted text-sm text-center">Todos os horários deste dia estão ocupados.<br>Escolha outra data.</p>
+      slotEl.innerHTML = `<div class="empty-slots" style="text-align:center;padding:1rem">
+        <p class="text-muted" style="margin-bottom:.75rem">Todos os horários deste dia estão ocupados.</p>
+        <button class="btn btn-ghost btn-sm" onclick="bkBackToDate()">← Escolher outra data</button>
       </div>`;
       return;
     }
@@ -277,7 +280,10 @@ async function _bkLoadSlots(date) {
     });
 
   } catch (e) {
-    slotEl.innerHTML = `<p class="text-muted text-sm text-center">${e.message}</p>`;
+    slotEl.innerHTML = `<div class="empty-slots" style="text-align:center;padding:1rem">
+      <p class="text-danger" style="margin-bottom:.75rem">${e.message}</p>
+      <button class="btn btn-ghost btn-sm" onclick="bkBackToDate()">← Escolher outra data</button>
+    </div>`;
   }
 }
 
