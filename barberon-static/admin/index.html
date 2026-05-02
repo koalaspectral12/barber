@@ -943,6 +943,15 @@ async function getShopId() {
   try{ const me=await api('/api/admin/me.php'); _user.barbershopId=me.barbershopId; return me.barbershopId; }catch{ return null; }
 }
 
+/* ── HELPER: dialog open/close ────────────────────────────────── */
+function openDialog(id) { document.getElementById(id)?.classList.add('open'); }
+function closeDialog(id) { document.getElementById(id)?.classList.remove('open'); }
+
+/* ── HELPER: close dialog on backdrop click ───────────────────── */
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('dialog-backdrop')) closeDialog(e.target.id);
+});
+
 /* ── Bootstrap ─────────────────────────────────────────────────── */
 boot();
 </script>

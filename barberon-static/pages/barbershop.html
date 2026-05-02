@@ -138,8 +138,9 @@ async function loadShop() {
     if (!Array.isArray(phones)) phones = [];
 
     // Short link
+    const siteBase = (window.BARBERON_CONFIG?.SITE_BASE || '').replace(/\/$/,'');
     const shopLink = s.slug
-      ? `<a href="b/${s.slug}.html" class="badge badge-primary" title="Link amigável" style="cursor:pointer;text-decoration:none">🔗 barberon.shop/${s.slug}</a>`
+      ? `<a href="${siteBase}/b/${s.slug}.html" class="badge badge-primary" title="Link amigável" style="cursor:pointer;text-decoration:none">🔗 ${window.location.hostname}${siteBase}/${s.slug}</a>`
       : '';
 
     // Build page HTML

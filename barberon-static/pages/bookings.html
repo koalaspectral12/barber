@@ -188,9 +188,8 @@ async function doCancel() {
   btn.disabled = true; btn.textContent = 'Cancelando…';
   errEl.classList.add('hidden');
   try {
-    await api('/api/bookings/index.php', {
-      method: 'PUT',
-      body: JSON.stringify({ id: _cancelId, status: 'CANCELLED' }),
+    await api('/api/bookings/index.php?id=' + encodeURIComponent(_cancelId), {
+      method: 'DELETE',
     });
     // Update local state
     _allBookings = _allBookings.map(b => b.id === _cancelId ? { ...b, status: 'CANCELLED' } : b);
