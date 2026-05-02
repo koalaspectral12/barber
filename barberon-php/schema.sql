@@ -302,4 +302,18 @@ ALTER TABLE `AppSettings` ADD COLUMN IF NOT EXISTS `mpAccessToken` TEXT DEFAULT 
 ALTER TABLE `AppSettings` ADD COLUMN IF NOT EXISTS `mpPublicKey`   TEXT DEFAULT NULL;
 ALTER TABLE `AppSettings` ADD COLUMN IF NOT EXISTS `contactEmail`  VARCHAR(255) DEFAULT NULL;
 
+-- ── Slug / friendly URL for barbershops ───────────────────────
+-- Run once to add the slug column and unique index.
+-- Admin can set a custom slug (e.g. "luiz") so the shop is
+-- accessible at /b/luiz.html (static) or ?slug=luiz (API).
+ALTER TABLE `Barbershop` ADD COLUMN IF NOT EXISTS
+    `slug` VARCHAR(100) DEFAULT NULL COMMENT 'URL-friendly identifier, e.g. luiz';
+ALTER TABLE `Barbershop` ADD UNIQUE IF NOT EXISTS `Barbershop_slug_key` (`slug`);
+
+-- ── Custom domain for barbershops (informational) ─────────────
+-- Stores the desired custom domain / subdomain set by the admin.
+-- Actual DNS routing must be configured externally (Cloudflare / host).
+ALTER TABLE `BarberPageConfig` ADD COLUMN IF NOT EXISTS
+    `customDomain` VARCHAR(255) DEFAULT NULL COMMENT 'e.g. luiz.barberon.shop';
+
 SET FOREIGN_KEY_CHECKS = 1;
